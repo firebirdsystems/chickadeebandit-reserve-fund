@@ -50,6 +50,7 @@ dist/
 | `description` | Yes | One-line description |
 | `entrypoint` | Yes | Entry file, almost always `index.html` |
 | `runtime` | Yes | `static` for HTML/JS apps (use this) |
+| `icon` | No | App icon — emoji (e.g. `"🛒"`) or a filename bundled with the app (e.g. `"icon.svg"`, `"icon.png"`). Shown in the marketplace, installed apps list, and nav bar. |
 | `storage` | Yes | `"kv"` (key/value blob), `"db"` (SQL), or `"none"` (no app-owned storage — uses hub-native data only) |
 | `data_access.reads` | Yes | Family data keys this app reads (see below) |
 | `data_access.writes` | Yes | Family data keys this app writes |
@@ -58,7 +59,7 @@ dist/
 | `resource_limits` | Yes | Storage caps — even if using defaults, declare this to signal the limits were considered (see below) |
 | `category` | No | e.g. `health`, `finance`, `games`, `tools` |
 | `tags` | No | Array of strings for filtering |
-| `nav` | No | `{ "label": "...", "icon": "🔧" }` — adds the app to the hub's top navigation bar. Omit for infrequently-accessed apps. |
+| `nav` | No | `{ "label": "..." }` — adds the app to the hub's top navigation bar. Uses `icon` automatically. Omit for infrequently-accessed apps. |
 | `widget` | No | `{ "label": "...", "size": "small" \| "medium" \| "large" }` — shows a summary tile on the dashboard |
 
 ### resource_limits

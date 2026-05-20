@@ -14,5 +14,7 @@
   "permissions": {
     "default_audience": "everyone",
     "requires_approval": false
-  }
+  },
+  "storage": "none",
+  "icon": "🔧"
 }
