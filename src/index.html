@@ -3,67 +3,594 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My App</title>
+  <title>Reserve Fund Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f9fafb; color: #111827; min-height: 100vh; }
-    .container { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-    .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 24px; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 12px; }
-    button { background: #111827; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
-    button:hover { background: #374151; }
-    #status { margin-top: 16px; font-size: 0.85rem; color: #6b7280; }
+    body { font-family: var(--hub-font, system-ui, sans-serif); background: var(--hub-bg, #f9fafb); color: var(--hub-text, #111827); font-size: var(--hub-font-size, 15px); }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    h1 { font-size: 1.4rem; font-weight: 700; flex: 1; }
+    .card { background: var(--hub-surface, #fff); border: 1px solid var(--hub-border, #e5e7eb); border-radius: var(--hub-radius, 12px); padding: 16px; margin-bottom: 12px; }
+    .section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--hub-text-muted, #6b7280); margin-bottom: 12px; }
+    .fund-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .fund-card { background: var(--hub-surface, #fff); border: 2px solid var(--hub-border, #e5e7eb); border-radius: var(--hub-radius, 12px); padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+    .fund-card:hover { border-color: var(--hub-primary, #111827); }
+    .fund-card.selected { border-color: var(--hub-primary, #111827); }
+    .fund-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .fund-bal { font-size: 1.4rem; font-weight: 700; }
+    .fund-meta { font-size: 0.75rem; color: var(--hub-text-muted, #6b7280); margin-top: 3px; }
+    .progress-track { height: 6px; background: var(--hub-border, #e5e7eb); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+    .progress-fill { height: 100%; background: var(--hub-primary, #111827); border-radius: 3px; }
+    .tabs { display: flex; border-bottom: 2px solid var(--hub-border, #e5e7eb); margin-bottom: 16px; }
+    .tab { background: none; border: none; padding: 8px 16px; font-size: 0.875rem; cursor: pointer; color: var(--hub-text-muted, #6b7280); border-bottom: 2px solid transparent; margin-bottom: -2px; font-weight: 500; }
+    .tab.active { color: var(--hub-text, #111827); border-bottom-color: var(--hub-text, #111827); font-weight: 600; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; font-size: 0.72rem; color: var(--hub-text-muted, #6b7280); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--hub-border, #e5e7eb); }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--hub-border, #e5e7eb); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 9999px; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-gray { background: var(--hub-border, #f3f4f6); color: var(--hub-text-muted, #6b7280); }
+    .amt-pos { color: #065f46; font-weight: 600; }
+    .amt-neg { color: #991b1b; font-weight: 600; }
+    .btn { border: none; border-radius: var(--hub-radius, 8px); padding: 8px 16px; font-size: 0.875rem; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: var(--hub-primary, #111827); color: var(--hub-primary-fg, #fff); }
+    .btn-primary:hover:not(:disabled) { background: var(--hub-primary-hover, #374151); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+    .btn-ghost { background: transparent; color: var(--hub-text-muted, #6b7280); border: 1px solid var(--hub-border, #e5e7eb); }
+    .btn-ghost:hover { background: var(--hub-border, #f3f4f6); }
+    .btn-danger { background: #fee2e2; color: #dc2626; border: none; }
+    .actions-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chart-wrap { overflow-x: auto; margin-bottom: 8px; }
+    .proj-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--hub-border, #e5e7eb); }
+    .proj-row:last-child { border-bottom: none; }
+    .empty { padding: 28px 0; text-align: center; color: var(--hub-text-muted, #6b7280); font-size: 0.875rem; }
+    .no-funds { padding: 48px 16px; text-align: center; color: var(--hub-text-muted, #6b7280); }
+    .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .detail-title { font-size: 1.1rem; font-weight: 700; flex: 1; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal { background: var(--hub-surface, #fff); border-radius: var(--hub-radius, 12px); padding: 24px; width: min(440px, 100%); max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .form-row { margin-bottom: 12px; }
+    .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--hub-text-muted, #374151); margin-bottom: 4px; }
+    input, select { background: var(--hub-surface, #fff); color: var(--hub-text, #111); border: 1px solid var(--hub-border, #d1d5db); border-radius: var(--hub-radius, 8px); padding: 8px 10px; font-size: 0.875rem; width: 100%; }
+    input:focus, select:focus { outline: 2px solid var(--hub-primary, #111827); outline-offset: -1px; border-color: transparent; }
+    @media (max-width: 480px) { .form-2col, .form-3col { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>My App</h1>
-    <p class="subtitle">Running inside Chickadee Bandit</p>
-
-    <div class="card">
-      <p id="members-list">Loading family members…</p>
+<div class="container">
+  <div class="header">
+    <h1>🏦 Reserve Fund Dashboard</h1>
+    <div id="boardHeader" style="display:none">
+      <button class="btn btn-primary btn-sm" onclick="openNewFundModal()">+ New Fund</button>
     </div>
-
-    <button onclick="refresh()">Refresh</button>
-    <p id="status"></p>
   </div>
 
-  <script>
-    // Chickadee Bandit injects these globals at runtime:
-    //   window.__CONTEXT_URL  → fetch family data (family.members, family.calendar, etc.)
-    //   window.__STORE_URL    → GET/POST per-app key-value store
-    //   window.__APP_ID       → this app's id string
-    const CONTEXT = window.__CONTEXT_URL ?? "/api";
-    const STORE   = window.__STORE_URL   ?? "";
+  <div id="fundGrid" class="fund-grid"></div>
 
-    async function load() {
-      try {
-        const res = await fetch(`${CONTEXT}?keys=family.members`);
-        const ctx = await res.json();
-        const members = ctx["family.members"] ?? [];
-        const list = document.getElementById("members-list");
-        if (!Array.isArray(members) || members.length === 0) {
-          list.textContent = "No family members found.";
-          return;
-        }
-        list.innerHTML = members.map(m =>
-          `<div style="padding:6px 0;border-bottom:1px solid #f3f4f6;">
-            <strong>${m.name}</strong>
-            <span style="color:#9ca3af;font-size:0.8rem;margin-left:8px;">${m.role}</span>
-           </div>`
-        ).join("");
-      } catch (e) {
-        document.getElementById("status").textContent = `Error: ${e.message}`;
+  <div class="card" id="detailCard" style="display:none">
+    <div class="detail-header">
+      <div class="detail-title" id="detailTitle"></div>
+      <div id="boardDetailActions" style="display:none" class="actions-bar" style="margin-bottom:0"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('chart')">Chart</button>
+      <button class="tab" onclick="switchTab('transactions')">Transactions</button>
+      <button class="tab" onclick="switchTab('projects')">Capital Projects</button>
+    </div>
+    <div class="tab-panel active" id="tab-chart">
+      <div class="chart-wrap" id="chartWrap"></div>
+      <p id="chartLegend" style="font-size:0.78rem;color:var(--hub-text-muted,#6b7280);margin-top:4px"></p>
+    </div>
+    <div class="tab-panel" id="tab-transactions">
+      <div id="boardTxActions" style="display:none" class="actions-bar"></div>
+      <div id="txList"></div>
+    </div>
+    <div class="tab-panel" id="tab-projects">
+      <div id="boardProjActions" style="display:none" class="actions-bar"></div>
+      <div id="projList"></div>
+    </div>
+  </div>
+
+  <div id="noFunds" class="no-funds" style="display:none">
+    <p style="font-size:1.1rem">No reserve funds yet.</p>
+    <p style="margin-top:8px;font-size:0.875rem">Board members can add funds using the button above.</p>
+  </div>
+</div>
+
+<script type="module">
+  import { esc, hubConfirm } from "/hub-sdk.js";
+
+  const CONTEXT = window.__CONTEXT_URL ?? "";
+  const STORE   = window.__STORE_URL   ?? "";
+  const ME      = window.__CURRENT_MEMBER ?? null;
+  const isBoard = ME?.role === "board" || ME?.isAdmin;
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let data = { funds: [], manualTx: [], projects: [] };
+  let importedTx = [];
+  let selectedFundId = null;
+  let activeTab = "chart";
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function uid() {
+    return crypto.randomUUID ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function fmtDollars(n) {
+    const v = n ?? 0;
+    const abs = Math.abs(v);
+    const s = abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (v < 0 ? "−" : "") + "$" + s;
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  let modalEl = null;
+  function openModal(html) {
+    closeModal();
+    modalEl = document.createElement("div");
+    modalEl.className = "modal-backdrop";
+    modalEl.innerHTML = `<div class="modal">${html}</div>`;
+    modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+    document.body.appendChild(modalEl);
+  }
+  function closeModal() { modalEl?.remove(); modalEl = null; }
+  window._closeModal = closeModal;
+
+  // ── Data ──────────────────────────────────────────────────────────────────
+  async function load() {
+    if (!STORE) {
+      data = {
+        funds: [{ id: "demo-1", name: "Roof Reserve", description: "Roof replacement 2027", goal: 80000, monthlyContributionRate: 500, archived: false, createdAt: "2025-01-01" }],
+        manualTx: [
+          { id: "t1", fundId: "demo-1", amount: 5000, description: "Opening balance", date: "2025-01-01", createdBy: "Board" },
+          { id: "t2", fundId: "demo-1", amount: 500,  description: "Monthly contribution", date: "2025-02-01", createdBy: "Board" },
+          { id: "t3", fundId: "demo-1", amount: 500,  description: "Monthly contribution", date: "2025-03-01", createdBy: "Board" },
+        ],
+        projects: [{ id: "p1", fundId: "demo-1", name: "Roof Replacement", estimatedCost: 80000, plannedYear: 2027 }],
+      };
+      importedTx = [];
+      selectedFundId = "demo-1";
+      render();
+      return;
+    }
+    const [dataRes, txRes] = await Promise.all([
+      fetch(`${STORE}?key=data`).then(r => r.json()),
+      fetch(`${STORE}?key=transactions`).then(r => r.json()),
+    ]);
+    data = dataRes.value ? JSON.parse(dataRes.value) : { funds: [], manualTx: [], projects: [] };
+    data.funds    ??= [];
+    data.manualTx ??= [];
+    data.projects ??= [];
+    const txObj = txRes.value ? JSON.parse(txRes.value) : {};
+    importedTx = txObj.items ?? [];
+    const activeFunds = data.funds.filter(f => !f.archived);
+    selectedFundId = activeFunds[0]?.id ?? null;
+    render();
+  }
+
+  async function save() {
+    if (!STORE) return;
+    const fundsList = { items: data.funds.filter(f => !f.archived).map(f => ({ id: f.id, name: f.name })) };
+    await Promise.all([
+      fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "data", value: JSON.stringify(data) }) }),
+      fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "funds-list", value: JSON.stringify(fundsList) }) }),
+    ]);
+  }
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+  function getFundBalance(fundId) {
+    const manual   = data.manualTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amount, 0);
+    const imported = importedTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amount, 0);
+    return manual + imported;
+  }
+
+  function getAllTxForFund(fundId) {
+    return [
+      ...data.manualTx.filter(t => t.fundId === fundId),
+      ...importedTx.filter(t => t.fundId === fundId),
+    ].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function render() {
+    const funds = data.funds.filter(f => !f.archived);
+    if (isBoard) document.getElementById("boardHeader").style.display = "";
+
+    const noFunds = document.getElementById("noFunds");
+    const grid    = document.getElementById("fundGrid");
+    const detail  = document.getElementById("detailCard");
+
+    if (!funds.length) {
+      grid.innerHTML = "";
+      noFunds.style.display = "";
+      detail.style.display  = "none";
+      return;
+    }
+    noFunds.style.display = "none";
+
+    grid.innerHTML = funds.map(f => {
+      const bal  = getFundBalance(f.id);
+      const goal = f.goal ?? 0;
+      const pct  = goal > 0 ? Math.min(100, bal / goal * 100) : 0;
+      return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" onclick="selectFund('${f.id}')">
+        <div class="fund-name">${esc(f.name)}</div>
+        <div class="fund-bal">${fmtDollars(bal)}</div>
+        ${goal ? `
+          <div class="fund-meta">Goal: ${fmtDollars(goal)}</div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct.toFixed(0)}%"></div></div>
+          <div class="fund-meta">${pct.toFixed(0)}% funded${f.monthlyContributionRate ? ` · +${fmtDollars(f.monthlyContributionRate)}/mo` : ""}</div>
+        ` : ""}
+      </div>`;
+    }).join("");
+
+    renderDetail();
+  }
+
+  window.selectFund = function(id) {
+    selectedFundId = id;
+    render();
+  };
+
+  function renderDetail() {
+    const fund   = data.funds.find(f => f.id === selectedFundId);
+    const detail = document.getElementById("detailCard");
+    if (!fund) { detail.style.display = "none"; return; }
+    detail.style.display = "";
+    document.getElementById("detailTitle").textContent = fund.name;
+
+    if (isBoard) {
+      document.getElementById("boardDetailActions").style.display = "";
+      document.getElementById("boardDetailActions").innerHTML =
+        `<button class="btn btn-ghost btn-sm" onclick="openEditFundModal()">Edit</button>
+         <button class="btn btn-ghost btn-sm" onclick="archiveFund()">Archive</button>`;
+      document.getElementById("boardTxActions").style.display = "";
+      document.getElementById("boardTxActions").innerHTML =
+        `<button class="btn btn-ghost btn-sm" onclick="openAddTxModal()">+ Add Transaction</button>`;
+      document.getElementById("boardProjActions").style.display = "";
+      document.getElementById("boardProjActions").innerHTML =
+        `<button class="btn btn-ghost btn-sm" onclick="openAddProjectModal()">+ Add Capital Project</button>`;
+    }
+
+    if      (activeTab === "chart")        renderChart(fund);
+    else if (activeTab === "transactions") renderTx(fund);
+    else                                   renderProjects(fund);
+  }
+
+  window.switchTab = function(tab) {
+    activeTab = tab;
+    document.querySelectorAll(".tab").forEach((t, i) =>
+      t.classList.toggle("active", ["chart", "transactions", "projects"][i] === tab));
+    document.querySelectorAll(".tab-panel").forEach((p, i) =>
+      p.classList.toggle("active", ["tab-chart", "tab-transactions", "tab-projects"][i] === "tab-" + tab));
+    renderDetail();
+  };
+
+  // ── Chart ─────────────────────────────────────────────────────────────────
+  function renderChart(fund) {
+    const wrap   = document.getElementById("chartWrap");
+    const legend = document.getElementById("chartLegend");
+    const allTx  = getAllTxForFund(fund.id);
+
+    if (!allTx.length) {
+      wrap.innerHTML = `<div class="empty">No transactions yet — add the first one to see the chart</div>`;
+      legend.textContent = "";
+      return;
+    }
+
+    let bal = 0;
+    const pts = allTx.map(t => ({ d: t.date, b: bal += t.amount }));
+    const currentBal = bal;
+
+    const rate     = fund.monthlyContributionRate ?? 0;
+    const projPts  = [];
+    if (rate > 0) {
+      const last = new Date(pts[pts.length - 1].d);
+      let projBal = currentBal;
+      for (let m = 1; m <= 6; m++) {
+        const nd = new Date(last);
+        nd.setMonth(nd.getMonth() + m);
+        projBal += rate;
+        projPts.push({ d: nd.toISOString().slice(0, 10), b: projBal });
       }
     }
 
-    function refresh() {
-      document.getElementById("status").textContent = "Refreshing…";
-      load().then(() => { document.getElementById("status").textContent = ""; });
+    const allPts = [...pts, ...projPts];
+    const W = 520, H = 170, pL = 56, pR = 30, pT = 12, pB = 28;
+    const cW = W - pL - pR, cH = H - pT - pB;
+    const bals   = allPts.map(p => p.b).concat([0, fund.goal ?? 0]);
+    const maxB   = Math.max(...bals);
+    const minB   = Math.min(...bals);
+    const bRange = maxB - minB || 1;
+    const minTs  = new Date(allPts[0].d).getTime();
+    const maxTs  = new Date(allPts[allPts.length - 1].d).getTime();
+    const tRange = maxTs - minTs || 1;
+
+    const px     = d => (pL + (new Date(d).getTime() - minTs) / tRange * cW).toFixed(1);
+    const py     = b => (pT + cH - (b - minB) / bRange * cH).toFixed(1);
+    const fmtLbl = b => b >= 100000 ? `$${(b / 1000).toFixed(0)}k` : b >= 1000 ? `$${(b / 1000).toFixed(1)}k` : `$${Math.round(b)}`;
+
+    const svg = [`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">`];
+
+    for (let i = 0; i <= 4; i++) {
+      const gB = minB + (i / 4) * bRange;
+      const gY = py(gB);
+      svg.push(`<line x1="${pL}" y1="${gY}" x2="${W - pR}" y2="${gY}" stroke="var(--hub-border,#e5e7eb)" stroke-width="1"/>`);
+      svg.push(`<text x="${pL - 4}" y="${+gY + 4}" text-anchor="end" font-size="9" fill="var(--hub-text-muted,#9ca3af)">${fmtLbl(gB)}</text>`);
     }
 
-    load();
-  </script>
+    const goal = fund.goal ?? 0;
+    if (goal > minB && goal <= maxB * 1.3) {
+      const gLine = py(goal);
+      svg.push(`<line x1="${pL}" y1="${gLine}" x2="${W - pR}" y2="${gLine}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,3"/>`);
+      svg.push(`<text x="${W - pR + 4}" y="${+gLine + 4}" font-size="9" fill="#10b981">Goal</text>`);
+    }
+
+    svg.push(`<polyline points="${pts.map(p => `${px(p.d)},${py(p.b)}`).join(" ")}" fill="none" stroke="var(--hub-primary,#111827)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`);
+
+    if (projPts.length) {
+      const prPts = [pts[pts.length - 1], ...projPts].map(p => `${px(p.d)},${py(p.b)}`).join(" ");
+      svg.push(`<polyline points="${prPts}" fill="none" stroke="var(--hub-primary,#111827)" stroke-width="2" stroke-dasharray="5,4" opacity="0.4"/>`);
+    }
+
+    const ep = pts[pts.length - 1];
+    svg.push(`<circle cx="${px(ep.d)}" cy="${py(ep.b)}" r="4" fill="var(--hub-primary,#111827)"/>`);
+
+    const xLabels = [pts[0]];
+    if (pts.length > 2) xLabels.push(pts[Math.floor(pts.length / 2)]);
+    xLabels.push(pts[pts.length - 1]);
+    for (const p of xLabels) {
+      const d = new Date(p.d);
+      svg.push(`<text x="${px(p.d)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--hub-text-muted,#9ca3af)">${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}</text>`);
+    }
+
+    svg.push("</svg>");
+    wrap.innerHTML = svg.join("");
+
+    const legendParts = [`${fmtDollars(currentBal)} balance`];
+    if (goal) legendParts.push(`${fmtDollars(goal)} goal (${(currentBal / goal * 100).toFixed(0)}% funded)`);
+    if (rate && projPts.length) legendParts.push(`dashed = projected at +${fmtDollars(rate)}/mo`);
+    legend.textContent = legendParts.join(" · ");
+  }
+
+  // ── Transactions tab ──────────────────────────────────────────────────────
+  function renderTx(fund) {
+    const txDiv = document.getElementById("txList");
+    const allTx = getAllTxForFund(fund.id);
+    if (!allTx.length) { txDiv.innerHTML = `<div class="empty">No transactions yet</div>`; return; }
+
+    let running = 0;
+    const rows = allTx.map(t => {
+      running += t.amount;
+      const cls    = t.amount >= 0 ? "amt-pos" : "amt-neg";
+      const amtStr = (t.amount >= 0 ? "+" : "") + fmtDollars(t.amount);
+      const src    = t.source === "dues-contributions"
+        ? `<span class="badge badge-blue">Dues</span>`
+        : t.reversal
+          ? `<span class="badge badge-gray">Reversal</span>`
+          : `<span class="badge badge-gray">Manual</span>`;
+      const del = isBoard && !t.source
+        ? `<button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">✕</button>` : "";
+      return `<tr>
+        <td>${esc(t.date)}</td><td>${esc(t.description)}</td>
+        <td class="${cls}">${amtStr}</td><td>${src}</td>
+        <td style="font-weight:600">${fmtDollars(running)}</td>
+        ${isBoard ? `<td>${del}</td>` : ""}
+      </tr>`;
+    }).join("");
+
+    const hdr = `<th>Date</th><th>Description</th><th>Amount</th><th>Source</th><th>Balance</th>${isBoard ? "<th></th>" : ""}`;
+    txDiv.innerHTML = `<table><thead><tr>${hdr}</tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  // ── Projects tab ──────────────────────────────────────────────────────────
+  function renderProjects(fund) {
+    const div   = document.getElementById("projList");
+    const projs = data.projects.filter(p => p.fundId === fund.id);
+    const bal   = getFundBalance(fund.id);
+    if (!projs.length) { div.innerHTML = `<div class="empty">No capital projects linked to this fund</div>`; return; }
+
+    div.innerHTML = projs.map((p, i) => {
+      const gap     = p.estimatedCost - bal;
+      const gapHtml = gap > 0
+        ? `<span style="color:#dc2626">Gap: ${fmtDollars(gap)}</span>`
+        : `<span style="color:#065f46">Fully funded ✓</span>`;
+      return `<div class="proj-row">
+        <div style="flex:1">
+          <div style="font-weight:600">${esc(p.name)}</div>
+          <div class="fund-meta">${fmtDollars(p.estimatedCost)} · ${p.plannedYear} · ${gapHtml}</div>
+        </div>
+        ${isBoard ? `<button class="btn btn-danger btn-sm" onclick="deleteProject(${i})">✕</button>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  // ── Fund modals ───────────────────────────────────────────────────────────
+  function openNewFundModal(existing = null) {
+    openModal(`
+      <h2>${existing ? "Edit Fund" : "New Reserve Fund"}</h2>
+      <div class="form-row"><label>Fund Name</label>
+        <input id="nf-name" placeholder="e.g. Roof Replacement Reserve" value="${esc(existing?.name ?? "")}">
+      </div>
+      <div class="form-row"><label>Description (optional)</label>
+        <input id="nf-desc" value="${esc(existing?.description ?? "")}">
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label>Goal Amount ($)</label>
+          <input type="number" id="nf-goal" step="0.01" min="0" value="${existing?.goal ?? ""}">
+        </div>
+        <div class="form-row"><label>Monthly Contribution ($)</label>
+          <input type="number" id="nf-rate" step="0.01" min="0" value="${existing?.monthlyContributionRate ?? ""}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="window._closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveFund('${existing?.id ?? ""}')">Save</button>
+      </div>
+    `);
+  }
+  window.openNewFundModal = openNewFundModal;
+
+  window.openEditFundModal = function() {
+    const fund = data.funds.find(f => f.id === selectedFundId);
+    if (fund) openNewFundModal(fund);
+  };
+
+  window.saveFund = async function(existingId) {
+    const name = document.getElementById("nf-name").value.trim();
+    if (!name) { document.getElementById("nf-name").focus(); return; }
+    const btn = modalEl?.querySelector(".btn-primary");
+    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+    try {
+      const goal = parseFloat(document.getElementById("nf-goal").value) || 0;
+      const rate = parseFloat(document.getElementById("nf-rate").value) || 0;
+      const desc = document.getElementById("nf-desc").value.trim();
+      if (existingId) {
+        const f = data.funds.find(f => f.id === existingId);
+        if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
+      } else {
+        const id = uid();
+        data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
+        selectedFundId = id;
+      }
+      await save();
+      closeModal();
+      render();
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "Save"; }
+      throw e;
+    }
+  };
+
+  window.archiveFund = async function() {
+    const fund = data.funds.find(f => f.id === selectedFundId);
+    if (!fund) return;
+    const ok = await hubConfirm({ message: `Archive "${fund.name}"?`, description: "Hidden from the dashboard. Transaction history is preserved.", confirmLabel: "Archive", destructive: true });
+    if (!ok) return;
+    fund.archived = true;
+    selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
+    await save();
+    render();
+  };
+
+  // ── Transaction modals ────────────────────────────────────────────────────
+  window.openAddTxModal = function() {
+    openModal(`
+      <h2>Add Transaction</h2>
+      <div class="form-row"><label>Description</label>
+        <input id="tx-desc" placeholder="e.g. Annual deposit, Emergency repair">
+      </div>
+      <div class="form-3col">
+        <div class="form-row"><label>Type</label>
+          <select id="tx-type">
+            <option value="deposit">Deposit (+)</option>
+            <option value="withdrawal">Withdrawal (−)</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Amount ($)</label>
+          <input type="number" id="tx-amount" step="0.01" min="0">
+        </div>
+        <div class="form-row"><label>Date</label>
+          <input type="date" id="tx-date" value="${today()}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="window._closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addTx()">Add</button>
+      </div>
+    `);
+  };
+
+  window.addTx = async function() {
+    const desc   = document.getElementById("tx-desc").value.trim();
+    const amount = parseFloat(document.getElementById("tx-amount").value);
+    const type   = document.getElementById("tx-type").value;
+    const date   = document.getElementById("tx-date").value;
+    if (!desc || isNaN(amount) || amount <= 0 || !date) return;
+    const btn = modalEl?.querySelector(".btn-primary");
+    if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
+    try {
+      data.manualTx.push({ id: uid(), fundId: selectedFundId, amount: type === "withdrawal" ? -amount : amount, description: desc, date, createdBy: ME?.name ?? "Board" });
+      await save();
+      closeModal();
+      render();
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "Add"; }
+      throw e;
+    }
+  };
+
+  window.deleteTx = async function(txId) {
+    const ok = await hubConfirm({ message: "Delete this transaction?", confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
+    data.manualTx = data.manualTx.filter(t => t.id !== txId);
+    await save();
+    renderDetail();
+    render();
+  };
+
+  // ── Project modals ────────────────────────────────────────────────────────
+  window.openAddProjectModal = function() {
+    openModal(`
+      <h2>Add Capital Project</h2>
+      <div class="form-row"><label>Project Name</label>
+        <input id="proj-name" placeholder="e.g. Roof Replacement">
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label>Estimated Cost ($)</label>
+          <input type="number" id="proj-cost" step="0.01" min="0">
+        </div>
+        <div class="form-row"><label>Planned Year</label>
+          <input type="number" id="proj-year" value="${new Date().getFullYear() + 2}" min="2020" max="2060">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="window._closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addProject()">Add</button>
+      </div>
+    `);
+  };
+
+  window.addProject = async function() {
+    const name = document.getElementById("proj-name").value.trim();
+    const cost = parseFloat(document.getElementById("proj-cost").value);
+    const year = parseInt(document.getElementById("proj-year").value);
+    if (!name || isNaN(cost) || isNaN(year)) return;
+    const btn = modalEl?.querySelector(".btn-primary");
+    if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
+    try {
+      data.projects.push({ id: uid(), fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
+      await save();
+      closeModal();
+      renderProjects(data.funds.find(f => f.id === selectedFundId));
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "Add"; }
+      throw e;
+    }
+  };
+
+  window.deleteProject = async function(index) {
+    const projs = data.projects.filter(p => p.fundId === selectedFundId);
+    const p     = projs[index];
+    if (!p) return;
+    const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
+    data.projects = data.projects.filter(proj => proj.id !== p.id);
+    await save();
+    renderProjects(data.funds.find(f => f.id === selectedFundId));
+  };
+
+  load();
+</script>
 </body>
 </html>

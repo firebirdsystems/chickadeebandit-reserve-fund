@@ -1,20 +1,22 @@
 {
-  "id": "my-app",
-  "name": "My App",
+  "id": "reserve-fund",
+  "name": "Reserve Fund Dashboard",
   "version": "1.0.0",
-  "description": "A short description of what this app does.",
+  "description": "Track HOA capital reserve funds — balances, goals, deposit/withdrawal ledger, capital project planning, and balance-over-time charts. Board manages; all members can view.",
   "entrypoint": "index.html",
   "runtime": "static",
-  "category": "tools",
-  "tags": [],
+  "category": "finance",
+  "tags": ["hoa", "reserve", "finance", "capital", "board"],
+  "exports": ["transactions", "funds-list"],
   "data_access": {
-    "reads": [],
+    "reads": ["family.members"],
     "writes": []
   },
   "permissions": {
     "default_audience": "everyone",
-    "requires_approval": false
+    "requires_approval": true
   },
-  "storage": "none",
-  "icon": "🔧"
+  "storage": "kv",
+  "icon": "🏦",
+  "nav": { "label": "Reserve Funds" }
 }
