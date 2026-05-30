@@ -590,7 +590,13 @@
     renderProjects(data.funds.find(f => f.id === selectedFundId));
   };
 
-  load();
+  function handleDeepLink() {
+    const fundId = new URLSearchParams(window.location.search).get("fundId");
+    if (!fundId) return;
+    selectFund(fundId);
+  }
+
+  load().then(handleDeepLink);
 </script>
 </body>
 </html>
