@@ -446,30 +446,23 @@
     if (fund) openNewFundModal(fund);
   };
 
-  window.saveFund = async function(existingId) {
+  window.saveFund = function(existingId) {
     const name = document.getElementById("nf-name").value.trim();
     if (!name) { document.getElementById("nf-name").focus(); return; }
-    const btn = modalEl?.querySelector(".btn-primary");
-    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-    try {
-      const goal = parseFloat(document.getElementById("nf-goal").value) || 0;
-      const rate = parseFloat(document.getElementById("nf-rate").value) || 0;
-      const desc = document.getElementById("nf-desc").value.trim();
-      if (existingId) {
-        const f = data.funds.find(f => f.id === existingId);
-        if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
-      } else {
-        const id = uid();
-        data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
-        selectedFundId = id;
-      }
-      await save();
-      closeModal();
-      render();
-    } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "Save"; }
-      throw e;
+    const goal = parseFloat(document.getElementById("nf-goal").value) || 0;
+    const rate = parseFloat(document.getElementById("nf-rate").value) || 0;
+    const desc = document.getElementById("nf-desc").value.trim();
+    if (existingId) {
+      const f = data.funds.find(f => f.id === existingId);
+      if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
+    } else {
+      const id = uid();
+      data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
+      selectedFundId = id;
     }
+    closeModal();
+    render();
+    save();
   };
 
   window.archiveFund = async function() {
@@ -479,8 +472,8 @@
     if (!ok) return;
     fund.archived = true;
     selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
-    await save();
     render();
+    save();
   };
 
   // ── Transaction modals ────────────────────────────────────────────────────
@@ -511,32 +504,24 @@
     `);
   };
 
-  window.addTx = async function() {
+  window.addTx = function() {
     const desc   = document.getElementById("tx-desc").value.trim();
     const amount = parseFloat(document.getElementById("tx-amount").value);
     const type   = document.getElementById("tx-type").value;
     const date   = document.getElementById("tx-date").value;
     if (!desc || isNaN(amount) || amount <= 0 || !date) return;
-    const btn = modalEl?.querySelector(".btn-primary");
-    if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
-    try {
-      data.manualTx.push({ id: uid(), fundId: selectedFundId, amount: type === "withdrawal" ? -amount : amount, description: desc, date, createdBy: ME?.name ?? "Board" });
-      await save();
-      closeModal();
-      render();
-    } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "Add"; }
-      throw e;
-    }
+    data.manualTx.push({ id: uid(), fundId: selectedFundId, amount: type === "withdrawal" ? -amount : amount, description: desc, date, createdBy: ME?.name ?? "Board" });
+    closeModal();
+    render();
+    save();
   };
 
   window.deleteTx = async function(txId) {
     const ok = await hubConfirm({ message: "Delete this transaction?", confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     data.manualTx = data.manualTx.filter(t => t.id !== txId);
-    await save();
-    renderDetail();
     render();
+    save();
   };
 
   // ── Project modals ────────────────────────────────────────────────────────
@@ -561,22 +546,15 @@
     `);
   };
 
-  window.addProject = async function() {
+  window.addProject = function() {
     const name = document.getElementById("proj-name").value.trim();
     const cost = parseFloat(document.getElementById("proj-cost").value);
     const year = parseInt(document.getElementById("proj-year").value);
     if (!name || isNaN(cost) || isNaN(year)) return;
-    const btn = modalEl?.querySelector(".btn-primary");
-    if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
-    try {
-      data.projects.push({ id: uid(), fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
-      await save();
-      closeModal();
-      renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "Add"; }
-      throw e;
-    }
+    data.projects.push({ id: uid(), fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
+    closeModal();
+    renderProjects(data.funds.find(f => f.id === selectedFundId));
+    save();
   };
 
   window.deleteProject = async function(index) {
@@ -586,8 +564,8 @@
     const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     data.projects = data.projects.filter(proj => proj.id !== p.id);
-    await save();
     renderProjects(data.funds.find(f => f.id === selectedFundId));
+    save();
   };
 
   function handleDeepLink() {
