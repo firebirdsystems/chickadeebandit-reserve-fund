@@ -69,9 +69,12 @@
   <div class="header">
     <h1>🏦 Reserve Fund Dashboard</h1>
     <div id="boardHeader" style="display:none">
-      <button class="btn btn-primary btn-sm" onclick="openNewFundModal()">+ New Fund</button>
+      <button id="newFundBtn" class="btn btn-primary btn-sm" onclick="openNewFundModal()" style="display:none">+ New Fund</button>
+      <button id="boardConfigBtn" class="btn btn-ghost btn-sm" onclick="openBoardConfig()" style="display:none">⚙︎ Board</button>
     </div>
   </div>
+
+  <div id="boardNotice" class="no-funds" style="display:none"></div>
 
   <div id="fundGrid" class="fund-grid"></div>
 
@@ -108,16 +111,47 @@
 <script type="module">
   import { esc, hubConfirm } from "/hub-sdk.js";
 
-  const CONTEXT = window.__CONTEXT_URL ?? "";
-  const STORE   = window.__STORE_URL   ?? "";
-  const ME      = window.__CURRENT_MEMBER ?? null;
-  const isBoard = ME?.role === "board" || ME?.isAdmin;
+  const CONTEXT      = window.__CONTEXT_URL ?? "";
+  const STORE        = window.__STORE_URL   ?? "";
+  const DB           = window.__DB_URL      ?? "";
+  const ADMIN_CONFIG = window.__ADMIN_CONFIG_URL ?? "";
+  const ME           = window.__CURRENT_MEMBER ?? null;
+  const IS_ADMIN     = !!ME?.isAdmin;
+  const DEMO         = !DB;
 
   // ── State ─────────────────────────────────────────────────────────────────
   let data = { funds: [], manualTx: [], projects: [] };
   let importedTx = [];
   let selectedFundId = null;
   let activeTab = "chart";
+  let groups = [];          // family.groups [{ id, name, memberIds }]
+  let boardGroupId = "";    // configured Board group (gates writes server-side)
+
+  // Board WRITE actions require membership in the configured Board group — the
+  // same thing the server's row policies enforce (admin status alone does NOT
+  // satisfy a row policy, so don't show write actions to a non-member admin).
+  // Configuring the board group is separate and admin-only (openBoardConfig).
+  function amIBoard() {
+    if (DEMO) return true;
+    if (!boardGroupId || !ME) return false;
+    const g = groups.find(g => g.id === boardGroupId);
+    return !!g && g.memberIds.includes(ME.id);
+  }
+
+  // ── DB helper ───────────────────────────────────────────────────────────────
+  async function db(sql, params = []) {
+    if (!DB) return { rows: [] };
+    const res = await fetch(DB, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql, params }),
+    });
+    if (!res.ok) {
+      let msg = `DB error ${res.status}`;
+      try { msg = (await res.json()).error ?? msg; } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function uid() {
@@ -147,7 +181,7 @@
 
   // ── Data ──────────────────────────────────────────────────────────────────
   async function load() {
-    if (!STORE) {
+    if (DEMO) {
       data = {
         funds: [{ id: "demo-1", name: "Roof Reserve", description: "Roof replacement 2027", goal: 80000, monthlyContributionRate: 500, archived: false, createdAt: "2025-01-01" }],
         manualTx: [
@@ -162,30 +196,46 @@
       render();
       return;
     }
-    const [dataRes, txRes] = await Promise.all([
-      fetch(`${STORE}?key=data`).then(r => r.json()),
-      fetch(`${STORE}?key=transactions`).then(r => r.json()),
+
+    // Funds / ledger / projects come from D1 (board-write, everyone-read via row
+    // policies). The configured Board group + group roster come from settings +
+    // family.groups. Imported allocations stay in KV `transactions` (the cross-app
+    // channel; written by other apps via the now-gated cross-write).
+    const [fundRows, txRows, projRows, setRows, txKv, groupsCtx] = await Promise.all([
+      db("SELECT * FROM app_reserve_fund__funds"),
+      db("SELECT * FROM app_reserve_fund__manual_tx"),
+      db("SELECT * FROM app_reserve_fund__projects"),
+      db("SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"),
+      fetch(`${STORE}?key=transactions`).then(r => r.json()).catch(() => ({})),
+      CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(r => r.ok ? r.json() : {}).catch(() => ({})) : Promise.resolve({}),
     ]);
-    data = dataRes.value ? JSON.parse(dataRes.value) : { funds: [], manualTx: [], projects: [] };
-    data.funds    ??= [];
-    data.manualTx ??= [];
-    data.projects ??= [];
-    const txObj = txRes.value ? JSON.parse(txRes.value) : {};
-    importedTx = txObj.items ?? [];
+
+    data.funds = (fundRows.rows ?? []).map(r => ({
+      id: r.id, name: r.name, description: r.description ?? "", goal: r.goal ?? 0,
+      monthlyContributionRate: r.monthly_rate ?? 0, archived: !!r.archived, createdAt: r.created_at,
+    }));
+    data.manualTx = (txRows.rows ?? []).map(r => ({
+      id: r.id, fundId: r.fund_id, amount: r.amount, description: r.description ?? "", date: r.date, createdBy: r.created_by,
+    }));
+    data.projects = (projRows.rows ?? []).map(r => ({
+      id: r.id, fundId: r.fund_id, name: r.name, estimatedCost: r.estimated_cost ?? 0, plannedYear: r.planned_year ?? 0,
+    }));
+    boardGroupId = setRows.rows?.[0]?.value ?? "";
+    importedTx = (txKv?.value ? JSON.parse(txKv.value) : {}).items ?? [];
+    groups = groupsCtx["family.groups"] ?? [];
+
     const activeFunds = data.funds.filter(f => !f.archived);
     selectedFundId = activeFunds[0]?.id ?? null;
     render();
   }
 
-  async function save() {
+  // Republish the cross-app KV projection other apps read as
+  // `app.reserve-fund.funds-list`. Called after any board mutation that changes funds.
+  async function publishFundsList() {
     if (!STORE) return;
     const fundsList = { items: data.funds.filter(f => !f.archived).map(f => ({ id: f.id, name: f.name })) };
-    await Promise.all([
-      fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "data", value: JSON.stringify(data) }) }),
-      fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "funds-list", value: JSON.stringify(fundsList) }) }),
-    ]);
+    await fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "funds-list", value: JSON.stringify(fundsList) }) }).catch(() => {});
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -205,7 +255,12 @@
   // ── Render ────────────────────────────────────────────────────────────────
   function render() {
     const funds = data.funds.filter(f => !f.archived);
-    if (isBoard) document.getElementById("boardHeader").style.display = "";
+    const board = amIBoard();
+    // Board header: write actions for group members; config button for admins.
+    document.getElementById("boardHeader").style.display = (board || IS_ADMIN) ? "" : "none";
+    document.getElementById("newFundBtn").style.display    = board ? "" : "none";
+    document.getElementById("boardConfigBtn").style.display = IS_ADMIN ? "" : "none";
+    renderBoardNotice();
 
     const noFunds = document.getElementById("noFunds");
     const grid    = document.getElementById("fundGrid");
@@ -249,7 +304,7 @@
     detail.style.display = "";
     document.getElementById("detailTitle").textContent = fund.name;
 
-    if (isBoard) {
+    if (amIBoard()) {
       document.getElementById("boardDetailActions").style.display = "";
       document.getElementById("boardDetailActions").innerHTML =
         `<button class="btn btn-ghost btn-sm" onclick="openEditFundModal()">Edit</button>
@@ -379,17 +434,17 @@
         : t.reversal
           ? `<span class="badge badge-gray">Reversal</span>`
           : `<span class="badge badge-gray">Manual</span>`;
-      const del = isBoard && !t.source
+      const del = amIBoard() && !t.source
         ? `<button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">✕</button>` : "";
       return `<tr>
         <td>${esc(t.date)}</td><td>${esc(t.description)}</td>
         <td class="${cls}">${amtStr}</td><td>${src}</td>
         <td style="font-weight:600">${fmtDollars(running)}</td>
-        ${isBoard ? `<td>${del}</td>` : ""}
+        ${amIBoard() ? `<td>${del}</td>` : ""}
       </tr>`;
     }).join("");
 
-    const hdr = `<th>Date</th><th>Description</th><th>Amount</th><th>Source</th><th>Balance</th>${isBoard ? "<th></th>" : ""}`;
+    const hdr = `<th>Date</th><th>Description</th><th>Amount</th><th>Source</th><th>Balance</th>${amIBoard() ? "<th></th>" : ""}`;
     txDiv.innerHTML = `<table><thead><tr>${hdr}</tr></thead><tbody>${rows}</tbody></table>`;
   }
 
@@ -410,7 +465,7 @@
           <div style="font-weight:600">${esc(p.name)}</div>
           <div class="fund-meta">${fmtDollars(p.estimatedCost)} · ${p.plannedYear} · ${gapHtml}</div>
         </div>
-        ${isBoard ? `<button class="btn btn-danger btn-sm" onclick="deleteProject(${i})">✕</button>` : ""}
+        ${amIBoard() ? `<button class="btn btn-danger btn-sm" onclick="deleteProject(${i})">✕</button>` : ""}
       </div>`;
     }).join("");
   }
@@ -446,23 +501,30 @@
     if (fund) openNewFundModal(fund);
   };
 
-  window.saveFund = function(existingId) {
+  window.saveFund = async function(existingId) {
     const name = document.getElementById("nf-name").value.trim();
     if (!name) { document.getElementById("nf-name").focus(); return; }
     const goal = parseFloat(document.getElementById("nf-goal").value) || 0;
     const rate = parseFloat(document.getElementById("nf-rate").value) || 0;
     const desc = document.getElementById("nf-desc").value.trim();
-    if (existingId) {
-      const f = data.funds.find(f => f.id === existingId);
-      if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
-    } else {
-      const id = uid();
-      data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
-      selectedFundId = id;
-    }
-    closeModal();
-    render();
-    save();
+    try {
+      if (existingId) {
+        await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal=?, monthly_rate=? WHERE id=?",
+          [name, desc, goal, rate, existingId]);
+        const f = data.funds.find(f => f.id === existingId);
+        if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
+      } else {
+        const id = uid();
+        // created_by is forced to the caller by the row policy; it must be a bound (?) param.
+        await db("INSERT INTO app_reserve_fund__funds (id, name, description, goal, monthly_rate, archived, visibility, created_by, created_at) VALUES (?,?,?,?,?,0,'everyone',?,?)",
+          [id, name, desc, goal, rate, "", new Date().toISOString()]);
+        data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
+        selectedFundId = id;
+      }
+      closeModal();
+      render();
+      publishFundsList();
+    } catch (e) { alert(e.message ?? "Save failed"); }
   };
 
   window.archiveFund = async function() {
@@ -470,10 +532,13 @@
     if (!fund) return;
     const ok = await hubConfirm({ message: `Archive "${fund.name}"?`, description: "Hidden from the dashboard. Transaction history is preserved.", confirmLabel: "Archive", destructive: true });
     if (!ok) return;
-    fund.archived = true;
-    selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
-    render();
-    save();
+    try {
+      await db("UPDATE app_reserve_fund__funds SET archived=1 WHERE id=?", [fund.id]);
+      fund.archived = true;
+      selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
+      render();
+      publishFundsList();
+    } catch (e) { alert(e.message ?? "Archive failed"); }
   };
 
   // ── Transaction modals ────────────────────────────────────────────────────
@@ -504,24 +569,31 @@
     `);
   };
 
-  window.addTx = function() {
+  window.addTx = async function() {
     const desc   = document.getElementById("tx-desc").value.trim();
     const amount = parseFloat(document.getElementById("tx-amount").value);
     const type   = document.getElementById("tx-type").value;
     const date   = document.getElementById("tx-date").value;
     if (!desc || isNaN(amount) || amount <= 0 || !date) return;
-    data.manualTx.push({ id: uid(), fundId: selectedFundId, amount: type === "withdrawal" ? -amount : amount, description: desc, date, createdBy: ME?.name ?? "Board" });
-    closeModal();
-    render();
-    save();
+    const id = uid();
+    const signed = type === "withdrawal" ? -amount : amount;
+    try {
+      await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+        [id, selectedFundId, signed, desc, date, "", new Date().toISOString()]);
+      data.manualTx.push({ id, fundId: selectedFundId, amount: signed, description: desc, date, createdBy: ME?.name ?? "Board" });
+      closeModal();
+      render();
+    } catch (e) { alert(e.message ?? "Add failed"); }
   };
 
   window.deleteTx = async function(txId) {
     const ok = await hubConfirm({ message: "Delete this transaction?", confirmLabel: "Delete", destructive: true });
     if (!ok) return;
-    data.manualTx = data.manualTx.filter(t => t.id !== txId);
-    render();
-    save();
+    try {
+      await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]);
+      data.manualTx = data.manualTx.filter(t => t.id !== txId);
+      render();
+    } catch (e) { alert(e.message ?? "Delete failed"); }
   };
 
   // ── Project modals ────────────────────────────────────────────────────────
@@ -546,15 +618,19 @@
     `);
   };
 
-  window.addProject = function() {
+  window.addProject = async function() {
     const name = document.getElementById("proj-name").value.trim();
     const cost = parseFloat(document.getElementById("proj-cost").value);
     const year = parseInt(document.getElementById("proj-year").value);
     if (!name || isNaN(cost) || isNaN(year)) return;
-    data.projects.push({ id: uid(), fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
-    closeModal();
-    renderProjects(data.funds.find(f => f.id === selectedFundId));
-    save();
+    const id = uid();
+    try {
+      await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+        [id, selectedFundId, name, cost, year, "", new Date().toISOString()]);
+      data.projects.push({ id, fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
+      closeModal();
+      renderProjects(data.funds.find(f => f.id === selectedFundId));
+    } catch (e) { alert(e.message ?? "Add failed"); }
   };
 
   window.deleteProject = async function(index) {
@@ -563,9 +639,57 @@
     if (!p) return;
     const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
     if (!ok) return;
-    data.projects = data.projects.filter(proj => proj.id !== p.id);
-    renderProjects(data.funds.find(f => f.id === selectedFundId));
-    save();
+    try {
+      await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]);
+      data.projects = data.projects.filter(proj => proj.id !== p.id);
+      renderProjects(data.funds.find(f => f.id === selectedFundId));
+    } catch (e) { alert(e.message ?? "Delete failed"); }
+  };
+
+  // ── Board group configuration (admin-only; writes board_group_id via the
+  //    admin-config endpoint, the sole writer the app_config policy permits) ──
+  function renderBoardNotice() {
+    const el = document.getElementById("boardNotice");
+    if (DEMO || boardGroupId) { el.style.display = "none"; return; }
+    el.style.display = "";
+    el.innerHTML = IS_ADMIN
+      ? `<p style="font-size:1.05rem">No Board group configured yet.</p>
+         <p style="margin-top:8px;font-size:.875rem">Pick which member group acts as the Board — only they can add or edit funds and ledger entries.</p>
+         <p style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="openBoardConfig()">Configure Board</button></p>`
+      : `<p style="font-size:1.05rem">This dashboard is read-only until an admin configures the Board group.</p>`;
+  }
+
+  window.openBoardConfig = function() {
+    if (!IS_ADMIN) return;
+    const opts = groups.map(g => `<option value="${esc(g.id)}"${g.id === boardGroupId ? " selected" : ""}>${esc(g.name)}</option>`).join("");
+    openModal(`
+      <h2>Configure Board Group</h2>
+      <div class="form-row"><label>Board group</label>
+        <select id="bc-group">
+          <option value="">— none —</option>
+          ${opts}
+        </select>
+        <p style="font-size:.75rem;color:var(--hub-text-muted,#6b7280);margin-top:6px">Members of this group may add/edit funds, ledger entries, and projects. Manage group membership in the hub's member settings.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="window._closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveBoardConfig()">Save</button>
+      </div>
+    `);
+  };
+
+  window.saveBoardConfig = async function() {
+    const groupId = document.getElementById("bc-group").value;
+    try {
+      const res = await fetch(ADMIN_CONFIG, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "board_group_id", value: groupId }),
+      });
+      if (!res.ok) { let m = "Save failed"; try { m = (await res.json()).error ?? m; } catch {} throw new Error(m); }
+      boardGroupId = groupId;
+      closeModal();
+      render();
+    } catch (e) { alert(e.message ?? "Save failed"); }
   };
 
   function handleDeepLink() {

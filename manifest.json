@@ -1,7 +1,7 @@
 {
   "id": "reserve-fund",
   "name": "Reserve Fund Dashboard",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Track organization capital reserve funds — balances, goals, deposit/withdrawal ledger, capital project planning, and balance-over-time charts. Board manages; all members can view.",
   "entrypoint": "index.html",
   "runtime": "static",
@@ -9,14 +9,50 @@
   "tags": ["hoa", "reserve", "finance", "capital", "board"],
   "exports": ["transactions", "funds-list"],
   "data_access": {
-    "reads": ["family.members"],
+    "reads": ["family.members", "family.groups"],
     "writes": []
   },
   "permissions": {
     "default_audience": "everyone",
     "requires_approval": true
   },
-  "storage": "kv",
+  "storage": "db",
   "icon": "🏦",
-  "nav": { "label": "Reserve Funds" }
+  "nav": { "label": "Reserve Funds" },
+  "row_policies": {
+    "settings": { "kind": "app_config" },
+    "funds": {
+      "kind": "owner_or_visibility",
+      "member_column": "created_by",
+      "visibility_column": "visibility",
+      "everyone_values": ["everyone"],
+      "write_privileged_only": true,
+      "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    },
+    "manual_tx": {
+      "kind": "owner_or_visibility",
+      "member_column": "created_by",
+      "visibility_column": "visibility",
+      "everyone_values": ["everyone"],
+      "write_privileged_only": true,
+      "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    },
+    "projects": {
+      "kind": "owner_or_visibility",
+      "member_column": "created_by",
+      "visibility_column": "visibility",
+      "everyone_values": ["everyone"],
+      "write_privileged_only": true,
+      "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    }
+  },
+  "admin_config": {
+    "settings_table": "settings",
+    "keys": ["board_group_id"]
+  },
+  "export_acls": {
+    "transactions": {
+      "require_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    }
+  }
 }
