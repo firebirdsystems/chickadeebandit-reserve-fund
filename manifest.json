@@ -7,9 +7,9 @@
   "runtime": "static",
   "category": "organization",
   "tags": ["hoa", "reserve", "finance", "capital", "board"],
-  "exports": ["transactions", "funds-list"],
+  "exports": ["funds-list"],
   "data_access": {
-    "reads": ["family.members", "family.groups"],
+    "reads": ["family.groups"],
     "writes": []
   },
   "permissions": {
@@ -17,6 +17,7 @@
     "requires_approval": true
   },
   "storage": "db",
+  "db_plaintext_columns": ["operation"],
   "icon": "🏦",
   "nav": { "label": "Reserve Funds" },
   "row_policies": {
@@ -44,14 +45,25 @@
       "everyone_values": ["everyone"],
       "write_privileged_only": true,
       "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
-    }
+    },
+    "imported_tx": { "kind": "endpoint_only", "read": "everyone" }
   },
   "admin_config": {
     "settings_table": "settings",
     "keys": ["board_group_id"]
   },
-  "export_acls": {
+  "store_acls": {
+    "funds-list": {
+      "write": {
+        "require_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+      }
+    }
+  },
+  "financial_ledger_imports": {
     "transactions": {
+      "table": "imported_tx",
+      "funds_table": "funds",
+      "allowed_source_apps": ["dues-contributions"],
       "require_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
     }
   }

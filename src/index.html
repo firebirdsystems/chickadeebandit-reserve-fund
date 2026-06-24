@@ -159,12 +159,17 @@
       : Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
   function today() { return new Date().toISOString().slice(0, 10); }
-  function fmtDollars(n) {
-    const v = n ?? 0;
+  function fmtDollars(cents) {
+    const v = Number(cents ?? 0) / 100;
     const abs = Math.abs(v);
     const s = abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return (v < 0 ? "−" : "") + "$" + s;
   }
+  function toCents(value) {
+    const amount = Number(value);
+    return Number.isFinite(amount) ? Math.round(amount * 100) : NaN;
+  }
+  function centsInput(cents) { return (Number(cents ?? 0) / 100).toFixed(2); }
 
   // ── Modal ─────────────────────────────────────────────────────────────────
   let modalEl = null;
@@ -183,13 +188,13 @@
   async function load() {
     if (DEMO) {
       data = {
-        funds: [{ id: "demo-1", name: "Roof Reserve", description: "Roof replacement 2027", goal: 80000, monthlyContributionRate: 500, archived: false, createdAt: "2025-01-01" }],
+        funds: [{ id: "demo-1", name: "Roof Reserve", description: "Roof replacement 2027", goalCents: 8000000, monthlyContributionRateCents: 50000, archived: false, createdAt: "2025-01-01" }],
         manualTx: [
-          { id: "t1", fundId: "demo-1", amount: 5000, description: "Opening balance", date: "2025-01-01", createdBy: "Board" },
-          { id: "t2", fundId: "demo-1", amount: 500,  description: "Monthly contribution", date: "2025-02-01", createdBy: "Board" },
-          { id: "t3", fundId: "demo-1", amount: 500,  description: "Monthly contribution", date: "2025-03-01", createdBy: "Board" },
+          { id: "t1", fundId: "demo-1", amountCents: 500000, description: "Opening balance", date: "2025-01-01", createdBy: "Board" },
+          { id: "t2", fundId: "demo-1", amountCents: 50000,  description: "Monthly contribution", date: "2025-02-01", createdBy: "Board" },
+          { id: "t3", fundId: "demo-1", amountCents: 50000,  description: "Monthly contribution", date: "2025-03-01", createdBy: "Board" },
         ],
-        projects: [{ id: "p1", fundId: "demo-1", name: "Roof Replacement", estimatedCost: 80000, plannedYear: 2027 }],
+        projects: [{ id: "p1", fundId: "demo-1", name: "Roof Replacement", estimatedCostCents: 8000000, plannedYear: 2027 }],
       };
       importedTx = [];
       selectedFundId = "demo-1";
@@ -199,34 +204,40 @@
 
     // Funds / ledger / projects come from D1 (board-write, everyone-read via row
     // policies). The configured Board group + group roster come from settings +
-    // family.groups. Imported allocations stay in KV `transactions` (the cross-app
-    // channel; written by other apps via the now-gated cross-write).
-    const [fundRows, txRows, projRows, setRows, txKv, groupsCtx] = await Promise.all([
+    // family.groups. Imported allocations are protected, idempotent D1 rows
+    // written only by the Hub finance protocol.
+    const [fundRows, txRows, projRows, importedRows, setRows, groupsCtx] = await Promise.all([
       db("SELECT * FROM app_reserve_fund__funds"),
       db("SELECT * FROM app_reserve_fund__manual_tx"),
       db("SELECT * FROM app_reserve_fund__projects"),
+      db("SELECT * FROM app_reserve_fund__imported_tx"),
       db("SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"),
-      fetch(`${STORE}?key=transactions`).then(r => r.json()).catch(() => ({})),
       CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(r => r.ok ? r.json() : {}).catch(() => ({})) : Promise.resolve({}),
     ]);
 
     data.funds = (fundRows.rows ?? []).map(r => ({
-      id: r.id, name: r.name, description: r.description ?? "", goal: r.goal ?? 0,
-      monthlyContributionRate: r.monthly_rate ?? 0, archived: !!r.archived, createdAt: r.created_at,
+      id: r.id, name: r.name, description: r.description ?? "", goalCents: r.goal_cents ?? 0,
+      monthlyContributionRateCents: r.monthly_rate_cents ?? 0, archived: !!r.archived, createdAt: r.created_at,
     }));
     data.manualTx = (txRows.rows ?? []).map(r => ({
-      id: r.id, fundId: r.fund_id, amount: r.amount, description: r.description ?? "", date: r.date, createdBy: r.created_by,
+      id: r.id, fundId: r.fund_id, amountCents: r.amount_cents, description: r.description ?? "", date: r.date, createdBy: r.created_by,
     }));
     data.projects = (projRows.rows ?? []).map(r => ({
-      id: r.id, fundId: r.fund_id, name: r.name, estimatedCost: r.estimated_cost ?? 0, plannedYear: r.planned_year ?? 0,
+      id: r.id, fundId: r.fund_id, name: r.name, estimatedCostCents: r.estimated_cost_cents ?? 0, plannedYear: r.planned_year ?? 0,
+    }));
+    importedTx = (importedRows.rows ?? []).map(r => ({
+      id: r.id, fundId: r.fund_id, amountCents: r.amount_cents,
+      description: r.description ?? "", date: r.effective_date,
+      source: r.source_app_id, operation: r.operation,
+      reversal: r.operation === "reversal",
     }));
     boardGroupId = setRows.rows?.[0]?.value ?? "";
-    importedTx = (txKv?.value ? JSON.parse(txKv.value) : {}).items ?? [];
     groups = groupsCtx["family.groups"] ?? [];
 
     const activeFunds = data.funds.filter(f => !f.archived);
     selectedFundId = activeFunds[0]?.id ?? null;
     render();
+    if (amIBoard()) publishFundsList().catch(error => console.warn("Funds-list projection refresh failed", error));
   }
 
   // Republish the cross-app KV projection other apps read as
@@ -234,14 +245,18 @@
   async function publishFundsList() {
     if (!STORE) return;
     const fundsList = { items: data.funds.filter(f => !f.archived).map(f => ({ id: f.id, name: f.name })) };
-    await fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "funds-list", value: JSON.stringify(fundsList) }) }).catch(() => {});
+    const response = await fetch(STORE, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "funds-list", value: JSON.stringify(fundsList) }) });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error ?? "Could not publish funds list");
+    }
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
   function getFundBalance(fundId) {
-    const manual   = data.manualTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amount, 0);
-    const imported = importedTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amount, 0);
+    const manual   = data.manualTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amountCents, 0);
+    const imported = importedTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amountCents, 0);
     return manual + imported;
   }
 
@@ -276,15 +291,15 @@
 
     grid.innerHTML = funds.map(f => {
       const bal  = getFundBalance(f.id);
-      const goal = f.goal ?? 0;
+      const goal = f.goalCents ?? 0;
       const pct  = goal > 0 ? Math.min(100, bal / goal * 100) : 0;
-      return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" onclick="selectFund('${f.id}')">
+      return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" data-fund-id="${esc(f.id)}">
         <div class="fund-name">${esc(f.name)}</div>
         <div class="fund-bal">${fmtDollars(bal)}</div>
         ${goal ? `
           <div class="fund-meta">Goal: ${fmtDollars(goal)}</div>
           <div class="progress-track"><div class="progress-fill" style="width:${pct.toFixed(0)}%"></div></div>
-          <div class="fund-meta">${pct.toFixed(0)}% funded${f.monthlyContributionRate ? ` · +${fmtDollars(f.monthlyContributionRate)}/mo` : ""}</div>
+          <div class="fund-meta">${pct.toFixed(0)}% funded${f.monthlyContributionRateCents ? ` · +${fmtDollars(f.monthlyContributionRateCents)}/mo` : ""}</div>
         ` : ""}
       </div>`;
     }).join("");
@@ -315,6 +330,12 @@
       document.getElementById("boardProjActions").style.display = "";
       document.getElementById("boardProjActions").innerHTML =
         `<button class="btn btn-ghost btn-sm" onclick="openAddProjectModal()">+ Add Capital Project</button>`;
+    } else {
+      for (const id of ["boardDetailActions", "boardTxActions", "boardProjActions"]) {
+        const element = document.getElementById(id);
+        element.style.display = "none";
+        element.innerHTML = "";
+      }
     }
 
     if      (activeTab === "chart")        renderChart(fund);
@@ -344,10 +365,10 @@
     }
 
     let bal = 0;
-    const pts = allTx.map(t => ({ d: t.date, b: bal += t.amount }));
+    const pts = allTx.map(t => ({ d: t.date, b: bal += t.amountCents }));
     const currentBal = bal;
 
-    const rate     = fund.monthlyContributionRate ?? 0;
+    const rate     = fund.monthlyContributionRateCents ?? 0;
     const projPts  = [];
     if (rate > 0) {
       const last = new Date(pts[pts.length - 1].d);
@@ -363,7 +384,7 @@
     const allPts = [...pts, ...projPts];
     const W = 520, H = 170, pL = 56, pR = 30, pT = 12, pB = 28;
     const cW = W - pL - pR, cH = H - pT - pB;
-    const bals   = allPts.map(p => p.b).concat([0, fund.goal ?? 0]);
+    const bals   = allPts.map(p => p.b).concat([0, fund.goalCents ?? 0]);
     const maxB   = Math.max(...bals);
     const minB   = Math.min(...bals);
     const bRange = maxB - minB || 1;
@@ -373,7 +394,12 @@
 
     const px     = d => (pL + (new Date(d).getTime() - minTs) / tRange * cW).toFixed(1);
     const py     = b => (pT + cH - (b - minB) / bRange * cH).toFixed(1);
-    const fmtLbl = b => b >= 100000 ? `$${(b / 1000).toFixed(0)}k` : b >= 1000 ? `$${(b / 1000).toFixed(1)}k` : `$${Math.round(b)}`;
+    const fmtLbl = cents => {
+      const dollars = cents / 100;
+      return dollars >= 100000 ? `$${(dollars / 1000).toFixed(0)}k`
+        : dollars >= 1000 ? `$${(dollars / 1000).toFixed(1)}k`
+        : `$${Math.round(dollars)}`;
+    };
 
     const svg = [`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">`];
 
@@ -384,7 +410,7 @@
       svg.push(`<text x="${pL - 4}" y="${+gY + 4}" text-anchor="end" font-size="9" fill="var(--hub-text-muted,#9ca3af)">${fmtLbl(gB)}</text>`);
     }
 
-    const goal = fund.goal ?? 0;
+    const goal = fund.goalCents ?? 0;
     if (goal > minB && goal <= maxB * 1.3) {
       const gLine = py(goal);
       svg.push(`<line x1="${pL}" y1="${gLine}" x2="${W - pR}" y2="${gLine}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,3"/>`);
@@ -426,16 +452,16 @@
 
     let running = 0;
     const rows = allTx.map(t => {
-      running += t.amount;
-      const cls    = t.amount >= 0 ? "amt-pos" : "amt-neg";
-      const amtStr = (t.amount >= 0 ? "+" : "") + fmtDollars(t.amount);
+      running += t.amountCents;
+      const cls    = t.amountCents >= 0 ? "amt-pos" : "amt-neg";
+      const amtStr = (t.amountCents >= 0 ? "+" : "") + fmtDollars(t.amountCents);
       const src    = t.source === "dues-contributions"
         ? `<span class="badge badge-blue">Dues</span>`
         : t.reversal
           ? `<span class="badge badge-gray">Reversal</span>`
           : `<span class="badge badge-gray">Manual</span>`;
       const del = amIBoard() && !t.source
-        ? `<button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">✕</button>` : "";
+        ? `<button class="btn btn-danger btn-sm delete-tx" data-tx-id="${esc(t.id)}">✕</button>` : "";
       return `<tr>
         <td>${esc(t.date)}</td><td>${esc(t.description)}</td>
         <td class="${cls}">${amtStr}</td><td>${src}</td>
@@ -455,23 +481,24 @@
     const bal   = getFundBalance(fund.id);
     if (!projs.length) { div.innerHTML = `<div class="empty">No capital projects linked to this fund</div>`; return; }
 
-    div.innerHTML = projs.map((p, i) => {
-      const gap     = p.estimatedCost - bal;
+    div.innerHTML = projs.map(p => {
+      const gap     = p.estimatedCostCents - bal;
       const gapHtml = gap > 0
         ? `<span style="color:#dc2626">Gap: ${fmtDollars(gap)}</span>`
         : `<span style="color:#065f46">Fully funded ✓</span>`;
       return `<div class="proj-row">
         <div style="flex:1">
           <div style="font-weight:600">${esc(p.name)}</div>
-          <div class="fund-meta">${fmtDollars(p.estimatedCost)} · ${p.plannedYear} · ${gapHtml}</div>
+          <div class="fund-meta">${fmtDollars(p.estimatedCostCents)} · ${p.plannedYear} · ${gapHtml}</div>
         </div>
-        ${amIBoard() ? `<button class="btn btn-danger btn-sm" onclick="deleteProject(${i})">✕</button>` : ""}
+        ${amIBoard() ? `<button class="btn btn-danger btn-sm delete-project" data-project-id="${esc(p.id)}">✕</button>` : ""}
       </div>`;
     }).join("");
   }
 
   // ── Fund modals ───────────────────────────────────────────────────────────
   function openNewFundModal(existing = null) {
+    window._editingFundId = existing?.id ?? "";
     openModal(`
       <h2>${existing ? "Edit Fund" : "New Reserve Fund"}</h2>
       <div class="form-row"><label>Fund Name</label>
@@ -482,15 +509,15 @@
       </div>
       <div class="form-2col">
         <div class="form-row"><label>Goal Amount ($)</label>
-          <input type="number" id="nf-goal" step="0.01" min="0" value="${existing?.goal ?? ""}">
+          <input type="number" id="nf-goal" step="0.01" min="0" value="${existing ? centsInput(existing.goalCents) : ""}">
         </div>
         <div class="form-row"><label>Monthly Contribution ($)</label>
-          <input type="number" id="nf-rate" step="0.01" min="0" value="${existing?.monthlyContributionRate ?? ""}">
+          <input type="number" id="nf-rate" step="0.01" min="0" value="${existing ? centsInput(existing.monthlyContributionRateCents) : ""}">
         </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="window._closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveFund('${existing?.id ?? ""}')">Save</button>
+        <button class="btn btn-primary" onclick="saveFund()">Save</button>
       </div>
     `);
   }
@@ -501,29 +528,35 @@
     if (fund) openNewFundModal(fund);
   };
 
-  window.saveFund = async function(existingId) {
+  window.saveFund = async function() {
+    const existingId = window._editingFundId ?? "";
     const name = document.getElementById("nf-name").value.trim();
     if (!name) { document.getElementById("nf-name").focus(); return; }
-    const goal = parseFloat(document.getElementById("nf-goal").value) || 0;
-    const rate = parseFloat(document.getElementById("nf-rate").value) || 0;
+    const goalCents = toCents(document.getElementById("nf-goal").value || "0");
+    const rateCents = toCents(document.getElementById("nf-rate").value || "0");
     const desc = document.getElementById("nf-desc").value.trim();
+    if (!Number.isInteger(goalCents) || goalCents < 0 || !Number.isInteger(rateCents) || rateCents < 0) return;
     try {
       if (existingId) {
-        await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal=?, monthly_rate=? WHERE id=?",
-          [name, desc, goal, rate, existingId]);
+        await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
+          [name, desc, goalCents, rateCents, existingId]);
         const f = data.funds.find(f => f.id === existingId);
-        if (f) Object.assign(f, { name, description: desc, goal, monthlyContributionRate: rate });
+        if (f) Object.assign(f, { name, description: desc, goalCents, monthlyContributionRateCents: rateCents });
       } else {
         const id = uid();
         // created_by is forced to the caller by the row policy; it must be a bound (?) param.
-        await db("INSERT INTO app_reserve_fund__funds (id, name, description, goal, monthly_rate, archived, visibility, created_by, created_at) VALUES (?,?,?,?,?,0,'everyone',?,?)",
-          [id, name, desc, goal, rate, "", new Date().toISOString()]);
-        data.funds.push({ id, name, description: desc, goal, monthlyContributionRate: rate, archived: false, createdAt: today() });
+        await db("INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?,?,?,?,?,0,'everyone',?,?)",
+          [id, name, desc, goalCents, rateCents, "", new Date().toISOString()]);
+        data.funds.push({ id, name, description: desc, goalCents, monthlyContributionRateCents: rateCents, archived: false, createdAt: today() });
         selectedFundId = id;
       }
       closeModal();
       render();
-      publishFundsList();
+      try {
+        await publishFundsList();
+      } catch (error) {
+        alert(`Fund saved, but the cross-app funds list needs retrying: ${error.message}`);
+      }
     } catch (e) { alert(e.message ?? "Save failed"); }
   };
 
@@ -537,7 +570,11 @@
       fund.archived = true;
       selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
       render();
-      publishFundsList();
+      try {
+        await publishFundsList();
+      } catch (error) {
+        alert(`Fund archived, but the cross-app funds list needs retrying: ${error.message}`);
+      }
     } catch (e) { alert(e.message ?? "Archive failed"); }
   };
 
@@ -571,16 +608,16 @@
 
   window.addTx = async function() {
     const desc   = document.getElementById("tx-desc").value.trim();
-    const amount = parseFloat(document.getElementById("tx-amount").value);
+    const amountCents = toCents(document.getElementById("tx-amount").value);
     const type   = document.getElementById("tx-type").value;
     const date   = document.getElementById("tx-date").value;
-    if (!desc || isNaN(amount) || amount <= 0 || !date) return;
+    if (!desc || !Number.isInteger(amountCents) || amountCents <= 0 || !date) return;
     const id = uid();
-    const signed = type === "withdrawal" ? -amount : amount;
+    const signedCents = type === "withdrawal" ? -amountCents : amountCents;
     try {
-      await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
-        [id, selectedFundId, signed, desc, date, "", new Date().toISOString()]);
-      data.manualTx.push({ id, fundId: selectedFundId, amount: signed, description: desc, date, createdBy: ME?.name ?? "Board" });
+      await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+        [id, selectedFundId, signedCents, desc, date, "", new Date().toISOString()]);
+      data.manualTx.push({ id, fundId: selectedFundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
       closeModal();
       render();
     } catch (e) { alert(e.message ?? "Add failed"); }
@@ -620,22 +657,21 @@
 
   window.addProject = async function() {
     const name = document.getElementById("proj-name").value.trim();
-    const cost = parseFloat(document.getElementById("proj-cost").value);
+    const costCents = toCents(document.getElementById("proj-cost").value);
     const year = parseInt(document.getElementById("proj-year").value);
-    if (!name || isNaN(cost) || isNaN(year)) return;
+    if (!name || !Number.isInteger(costCents) || costCents < 0 || !Number.isInteger(year)) return;
     const id = uid();
     try {
-      await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
-        [id, selectedFundId, name, cost, year, "", new Date().toISOString()]);
-      data.projects.push({ id, fundId: selectedFundId, name, estimatedCost: cost, plannedYear: year });
+      await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+        [id, selectedFundId, name, costCents, year, "", new Date().toISOString()]);
+      data.projects.push({ id, fundId: selectedFundId, name, estimatedCostCents: costCents, plannedYear: year });
       closeModal();
       renderProjects(data.funds.find(f => f.id === selectedFundId));
     } catch (e) { alert(e.message ?? "Add failed"); }
   };
 
-  window.deleteProject = async function(index) {
-    const projs = data.projects.filter(p => p.fundId === selectedFundId);
-    const p     = projs[index];
+  window.deleteProject = async function(projectId) {
+    const p = data.projects.find(project => project.id === projectId && project.fundId === selectedFundId);
     if (!p) return;
     const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
     if (!ok) return;
@@ -697,6 +733,19 @@
     if (!fundId) return;
     selectFund(fundId);
   }
+
+  document.getElementById("fundGrid").addEventListener("click", event => {
+    const card = event.target instanceof Element ? event.target.closest("[data-fund-id]") : null;
+    if (card) selectFund(card.dataset.fundId);
+  });
+  document.getElementById("txList").addEventListener("click", event => {
+    const button = event.target instanceof Element ? event.target.closest(".delete-tx") : null;
+    if (button) deleteTx(button.dataset.txId);
+  });
+  document.getElementById("projList").addEventListener("click", event => {
+    const button = event.target instanceof Element ? event.target.closest(".delete-project") : null;
+    if (button) deleteProject(button.dataset.projectId);
+  });
 
   load().then(handleDeepLink);
 </script>

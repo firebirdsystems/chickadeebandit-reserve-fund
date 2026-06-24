@@ -38,4 +38,26 @@ describe("manifest.json", () => {
     expect(Array.isArray(manifest.data_access.reads)).toBe(true);
     expect(Array.isArray(manifest.data_access.writes)).toBe(true);
   });
+
+  it("protects its projection and imports transactions only through the Hub ledger protocol", () => {
+    expect(manifest.store_acls["funds-list"].write.require_group_setting).toMatchObject({
+      settings_table: "settings",
+      settings_key: "board_group_id",
+    });
+    expect(manifest.exports).toEqual(["funds-list"]);
+    expect(manifest.row_policies.imported_tx).toMatchObject({ kind: "endpoint_only", read: "everyone" });
+    expect(manifest.financial_ledger_imports.transactions).toMatchObject({
+      table: "imported_tx",
+      funds_table: "funds",
+      allowed_source_apps: ["dues-contributions"],
+    });
+  });
+
+  it("stores money as integer cents", () => {
+    const migration = readFileSync(join(__dirname, "../migrations/001_init.sql"), "utf-8");
+    expect(migration).toContain("goal_cents");
+    expect(migration).toContain("amount_cents INTEGER");
+    expect(migration).toContain("estimated_cost_cents");
+    expect(migration).not.toMatch(/\bREAL\b/);
+  });
 });
