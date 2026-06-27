@@ -109,7 +109,7 @@
 </div>
 
 <script type="module">
-  import { esc, hubConfirm } from "/hub-sdk.js";
+  import { hubAlert, esc, hubConfirm } from "/hub-sdk.js";
 
   const CONTEXT      = window.__CONTEXT_URL ?? "";
   const STORE        = window.__STORE_URL   ?? "";
@@ -555,9 +555,9 @@
       try {
         await publishFundsList();
       } catch (error) {
-        alert(`Fund saved, but the cross-app funds list needs retrying: ${error.message}`);
+        hubAlert(`Fund saved, but the cross-app funds list needs retrying: ${error.message}`);
       }
-    } catch (e) { alert(e.message ?? "Save failed"); }
+    } catch (e) { hubAlert(e.message ?? "Save failed"); }
   };
 
   window.archiveFund = async function() {
@@ -573,9 +573,9 @@
       try {
         await publishFundsList();
       } catch (error) {
-        alert(`Fund archived, but the cross-app funds list needs retrying: ${error.message}`);
+        hubAlert(`Fund archived, but the cross-app funds list needs retrying: ${error.message}`);
       }
-    } catch (e) { alert(e.message ?? "Archive failed"); }
+    } catch (e) { hubAlert(e.message ?? "Archive failed"); }
   };
 
   // ── Transaction modals ────────────────────────────────────────────────────
@@ -620,7 +620,7 @@
       data.manualTx.push({ id, fundId: selectedFundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
       closeModal();
       render();
-    } catch (e) { alert(e.message ?? "Add failed"); }
+    } catch (e) { hubAlert(e.message ?? "Add failed"); }
   };
 
   window.deleteTx = async function(txId) {
@@ -630,7 +630,7 @@
       await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]);
       data.manualTx = data.manualTx.filter(t => t.id !== txId);
       render();
-    } catch (e) { alert(e.message ?? "Delete failed"); }
+    } catch (e) { hubAlert(e.message ?? "Delete failed"); }
   };
 
   // ── Project modals ────────────────────────────────────────────────────────
@@ -667,7 +667,7 @@
       data.projects.push({ id, fundId: selectedFundId, name, estimatedCostCents: costCents, plannedYear: year });
       closeModal();
       renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { alert(e.message ?? "Add failed"); }
+    } catch (e) { hubAlert(e.message ?? "Add failed"); }
   };
 
   window.deleteProject = async function(projectId) {
@@ -679,7 +679,7 @@
       await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]);
       data.projects = data.projects.filter(proj => proj.id !== p.id);
       renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { alert(e.message ?? "Delete failed"); }
+    } catch (e) { hubAlert(e.message ?? "Delete failed"); }
   };
 
   // ── Board group configuration (admin-only; writes board_group_id via the
@@ -725,7 +725,7 @@
       boardGroupId = groupId;
       closeModal();
       render();
-    } catch (e) { alert(e.message ?? "Save failed"); }
+    } catch (e) { hubAlert(e.message ?? "Save failed"); }
   };
 
   function handleDeepLink() {
