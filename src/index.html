@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/run/reserve-fund/" />
   <title>Reserve Fund Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,6 +111,7 @@
 
 <script type="module">
   import { hubAlert, esc, hubConfirm } from "/hub-sdk.js";
+  import { canManageReserve as _canManageReserve } from "./logic.js";
 
   const CONTEXT      = window.__CONTEXT_URL ?? "";
   const STORE        = window.__STORE_URL   ?? "";
@@ -133,9 +135,7 @@
   // Configuring the board group is separate and admin-only (openBoardConfig).
   function amIBoard() {
     if (DEMO) return true;
-    if (!boardGroupId || !ME) return false;
-    const g = groups.find(g => g.id === boardGroupId);
-    return !!g && g.memberIds.includes(ME.id);
+    return _canManageReserve(ME, groups, boardGroupId);
   }
 
   // ── DB helper ───────────────────────────────────────────────────────────────
