@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "name": "funds, transactions and projects are writable only by the treasurer group",
+      "members": { "member": "adult" },
+      "steps": [
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "UPDATE app_reserve_fund__funds SET visibility = 'everyone'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "UPDATE app_reserve_fund__manual_tx SET visibility = 'everyone'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "DELETE FROM app_reserve_fund__projects",
+          "expect": { "status": 403 }
+        }
+      ]
+    }
+  ]
+}
