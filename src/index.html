@@ -111,7 +111,10 @@
 
 <script type="module">
   import { hubAlert, esc, hubConfirm } from "/hub-sdk.js";
-  import { canManageReserve as _canManageReserve } from "./logic.js";
+  import {
+    canManageReserve as _canManageReserve,
+    fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents,
+  } from "./logic.js";
 
   const CONTEXT      = window.__CONTEXT_URL ?? "";
   const STORE        = window.__STORE_URL   ?? "";
@@ -255,16 +258,14 @@
 
   // ── Derived ───────────────────────────────────────────────────────────────
   function getFundBalance(fundId) {
-    const manual   = data.manualTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amountCents, 0);
-    const imported = importedTx.filter(t => t.fundId === fundId).reduce((s, t) => s + t.amountCents, 0);
-    return manual + imported;
+    return fundBalanceCents(getAllTxForFund(fundId));
   }
 
   function getAllTxForFund(fundId) {
-    return [
+    return sortTxByDate([
       ...data.manualTx.filter(t => t.fundId === fundId),
       ...importedTx.filter(t => t.fundId === fundId),
-    ].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    ]);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -292,7 +293,7 @@
     grid.innerHTML = funds.map(f => {
       const bal  = getFundBalance(f.id);
       const goal = f.goalCents ?? 0;
-      const pct  = goal > 0 ? Math.min(100, bal / goal * 100) : 0;
+      const pct  = fundedPct(bal, goal);
       return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" data-fund-id="${esc(f.id)}">
         <div class="fund-name">${esc(f.name)}</div>
         <div class="fund-bal">${fmtDollars(bal)}</div>
@@ -482,7 +483,7 @@
     if (!projs.length) { div.innerHTML = `<div class="empty">No capital projects linked to this fund</div>`; return; }
 
     div.innerHTML = projs.map(p => {
-      const gap     = p.estimatedCostCents - bal;
+      const gap     = projectFundingGapCents(p.estimatedCostCents, bal);
       const gapHtml = gap > 0
         ? `<span style="color:#dc2626">Gap: ${fmtDollars(gap)}</span>`
         : `<span style="color:#065f46">Fully funded ✓</span>`;
