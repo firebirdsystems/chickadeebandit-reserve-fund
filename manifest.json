@@ -1,5 +1,6 @@
 {
   "id": "reserve-fund",
+  "contexts": ["household", "shared_space"],
   "name": "Reserve Fund Dashboard",
   "version": "2.0.0",
   "description": "Track organization capital reserve funds — balances, goals, deposit/withdrawal ledger, capital project planning, and balance-over-time charts. Board manages; all members can view.",
