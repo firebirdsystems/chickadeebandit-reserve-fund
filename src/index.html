@@ -210,10 +210,10 @@
     // family.groups. Imported allocations are protected, idempotent D1 rows
     // written only by the Hub finance protocol.
     const [fundRows, txRows, projRows, importedRows, setRows, groupsCtx] = await Promise.all([
-      db("SELECT * FROM app_reserve_fund__funds"),
-      db("SELECT * FROM app_reserve_fund__manual_tx"),
-      db("SELECT * FROM app_reserve_fund__projects"),
-      db("SELECT * FROM app_reserve_fund__imported_tx"),
+      db("SELECT * FROM app_reserve_fund__funds ORDER BY created_at ASC LIMIT 200"),
+      db("SELECT * FROM app_reserve_fund__manual_tx ORDER BY created_at DESC LIMIT 2000"),
+      db("SELECT * FROM app_reserve_fund__projects ORDER BY created_at DESC LIMIT 500"),
+      db("SELECT * FROM app_reserve_fund__imported_tx ORDER BY posted_at DESC LIMIT 5000"),
       db("SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"),
       CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(r => r.ok ? r.json() : {}).catch(() => ({})) : Promise.resolve({}),
     ]);

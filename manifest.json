@@ -20,6 +20,13 @@
   "storage": "db",
   "db_plaintext_columns": ["operation"],
   "icon": "🏦",
+  "member_references": {
+    "funds": { "column": "created_by", "on_removed": "keep" },
+    "manual_tx": { "column": "created_by", "on_removed": "keep" },
+    "projects": { "column": "created_by", "on_removed": "keep" },
+    "imported_tx": { "column": "posted_by_id", "on_removed": "keep" }
+  },
+  "resource_limits": { "max_db_bytes": 104857600 },
   "nav": { "label": "Reserve Funds" },
   "row_policies": {
     "settings": { "kind": "app_config" },
