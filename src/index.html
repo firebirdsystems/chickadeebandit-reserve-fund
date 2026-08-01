@@ -127,6 +127,10 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let data = { funds: [], manualTx: [], projects: [] };
   let importedTx = [];
+  // fund id → authoritative balance in cents, SUMmed in SQL over the WHOLE
+  // ledger. The loaded transaction rows are truncated and must never be summed
+  // for a balance.
+  let fundTotals = new Map();
   let selectedFundId = null;
   let activeTab = "chart";
   let groups = [];          // family.groups [{ id, name, memberIds }]
@@ -209,14 +213,27 @@
     // policies). The configured Board group + group roster come from settings +
     // family.groups. Imported allocations are protected, idempotent D1 rows
     // written only by the Hub finance protocol.
-    const [fundRows, txRows, projRows, importedRows, setRows, groupsCtx] = await Promise.all([
+    // The row loads are TRUNCATED (a ledger outlives its LIMIT), so they drive
+    // the ledger list and the chart's shape — never a balance. Every balance
+    // comes from these two SUMs, which the row-policy rewriter scopes exactly
+    // like the SELECTs above, so the figure is authoritative at any history
+    // size. Summing the loaded rows instead silently dropped the oldest
+    // transactions once a fund passed 2000 of them.
+    const [fundRows, txRows, projRows, importedRows, manualSums, importedSums, setRows, groupsCtx] = await Promise.all([
       db("SELECT * FROM app_reserve_fund__funds ORDER BY created_at ASC LIMIT 200"),
       db("SELECT * FROM app_reserve_fund__manual_tx ORDER BY created_at DESC LIMIT 2000"),
       db("SELECT * FROM app_reserve_fund__projects ORDER BY created_at DESC LIMIT 500"),
       db("SELECT * FROM app_reserve_fund__imported_tx ORDER BY posted_at DESC LIMIT 5000"),
+      db("SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__manual_tx GROUP BY fund_id"),
+      db("SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__imported_tx GROUP BY fund_id"),
       db("SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"),
       CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(r => r.ok ? r.json() : {}).catch(() => ({})) : Promise.resolve({}),
     ]);
+
+    fundTotals = new Map();
+    for (const row of [...(manualSums.rows ?? []), ...(importedSums.rows ?? [])]) {
+      fundTotals.set(row.fund_id, (fundTotals.get(row.fund_id) ?? 0) + Number(row.total_cents || 0));
+    }
 
     data.funds = (fundRows.rows ?? []).map(r => ({
       id: r.id, name: r.name, description: r.description ?? "", goalCents: r.goal_cents ?? 0,
@@ -258,7 +275,27 @@
 
   // ── Derived ───────────────────────────────────────────────────────────────
   function getFundBalance(fundId) {
-    return fundBalanceCents(getAllTxForFund(fundId));
+    // SQL total when we have one; the loaded rows are only a fallback for the
+    // demo mode, where there is no database to sum.
+    return fundTotals.has(fundId) ? fundTotals.get(fundId) : fundBalanceCents(getAllTxForFund(fundId));
+  }
+
+  /** Apply a just-written transaction to the SQL-derived total. Only called
+   *  when the write has already succeeded, so it mirrors the row the next full
+   *  load will sum. */
+  function adjustFundTotal(fundId, deltaCents) {
+    if (!fundId || !fundTotals.has(fundId) && deltaCents === 0) return;
+    fundTotals.set(fundId, (fundTotals.get(fundId) ?? 0) + deltaCents);
+  }
+
+  /**
+   * Balance the fund carried BEFORE the oldest transaction we loaded — the
+   * authoritative total minus everything on screen. Zero for a short ledger;
+   * non-zero once the ledger outgrows its LIMIT, which is exactly when a running
+   * total started from 0 would be wrong.
+   */
+  function openingBalance(fundId) {
+    return getFundBalance(fundId) - fundBalanceCents(getAllTxForFund(fundId));
   }
 
   function getAllTxForFund(fundId) {
@@ -365,7 +402,10 @@
       return;
     }
 
-    let bal = 0;
+    // Start the running series at what the fund held before the oldest loaded
+    // transaction, so the line ends on the real balance rather than on the sum
+    // of however many rows fit under the query's LIMIT.
+    let bal = openingBalance(fund.id);
     const pts = allTx.map(t => ({ d: t.date, b: bal += t.amountCents }));
     const currentBal = bal;
 
@@ -451,7 +491,10 @@
     const allTx = getAllTxForFund(fund.id);
     if (!allTx.length) { txDiv.innerHTML = `<div class="empty">No transactions yet</div>`; return; }
 
-    let running = 0;
+    // Same opening balance as the chart: the per-row "Balance" column has to
+    // agree with the fund's real total, not with the truncated page of rows.
+    const opening = openingBalance(fund.id);
+    let running = opening;
     const rows = allTx.map(t => {
       running += t.amountCents;
       const cls    = t.amountCents >= 0 ? "amt-pos" : "amt-neg";
@@ -472,7 +515,13 @@
     }).join("");
 
     const hdr = `<th>Date</th><th>Description</th><th>Amount</th><th>Source</th><th>Balance</th>${amIBoard() ? "<th></th>" : ""}`;
-    txDiv.innerHTML = `<table><thead><tr>${hdr}</tr></thead><tbody>${rows}</tbody></table>`;
+    // Say so when the list is only the tail of a longer ledger, rather than
+    // letting the first row look like the fund's first-ever transaction.
+    const openingRow = opening !== 0
+      ? `<tr><td colspan="4" style="color:var(--hub-text-muted,#6b7280)">Balance carried forward from earlier transactions</td>
+           <td style="font-weight:600">${fmtDollars(opening)}</td>${amIBoard() ? "<td></td>" : ""}</tr>`
+      : "";
+    txDiv.innerHTML = `<table><thead><tr>${hdr}</tr></thead><tbody>${openingRow}${rows}</tbody></table>`;
   }
 
   // ── Projects tab ──────────────────────────────────────────────────────────
@@ -619,6 +668,9 @@
       await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
         [id, selectedFundId, signedCents, desc, date, "", new Date().toISOString()]);
       data.manualTx.push({ id, fundId: selectedFundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
+      // Keep the SQL-derived total in step with the optimistic row, or the
+      // balance would ignore the transaction until the next full load.
+      adjustFundTotal(selectedFundId, signedCents);
       closeModal();
       render();
     } catch (e) { hubAlert(e.message ?? "Add failed"); }
@@ -629,7 +681,9 @@
     if (!ok) return;
     try {
       await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]);
+      const removed = data.manualTx.find(t => t.id === txId);
       data.manualTx = data.manualTx.filter(t => t.id !== txId);
+      if (removed) adjustFundTotal(removed.fundId, -Number(removed.amountCents || 0));
       render();
     } catch (e) { hubAlert(e.message ?? "Delete failed"); }
   };
