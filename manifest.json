@@ -28,6 +28,15 @@
   },
   "resource_limits": { "max_db_bytes": 104857600 },
   "nav": { "label": "Reserve Funds" },
+  "publishes": ["reserve_fund.transaction_recorded", "reserve_fund.project_planned"],
+  "publish_acls": {
+    "reserve_fund.transaction_recorded": {
+      "require_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    },
+    "reserve_fund.project_planned": {
+      "require_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    }
+  },
   "row_policies": {
     "settings": { "kind": "app_config" },
     "funds": {

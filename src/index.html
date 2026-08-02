@@ -119,6 +119,23 @@
   const CONTEXT      = window.__CONTEXT_URL ?? "";
   const STORE        = window.__STORE_URL   ?? "";
   const DB           = window.__DB_URL      ?? "";
+  const EVENTS       = window.__EVENTS_URL  ?? "";
+
+  /** Best-effort publish onto the household event bus. The row is already
+   *  written, so a failed publish must never roll it back. Both types are
+   *  board-gated in publish_acls, matching the write gate on the tables. */
+  async function publishEvent(type, subjectId, payload = {}) {
+    if (!EVENTS) return;
+    try {
+      await fetch(EVENTS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, subject_id: subjectId, payload }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }
   const ADMIN_CONFIG = window.__ADMIN_CONFIG_URL ?? "";
   const ME           = window.__CURRENT_MEMBER ?? null;
   const IS_ADMIN     = !!ME?.isAdmin;
@@ -671,6 +688,12 @@
       // Keep the SQL-derived total in step with the optimistic row, or the
       // balance would ignore the transaction until the next full load.
       adjustFundTotal(selectedFundId, signedCents);
+      await publishEvent("reserve_fund.transaction_recorded", id, {
+        fund_id: selectedFundId,
+        amount_cents: signedCents,
+        description: desc,
+        date,
+      });
       closeModal();
       render();
     } catch (e) { hubAlert(e.message ?? "Add failed"); }
@@ -720,6 +743,12 @@
       await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
         [id, selectedFundId, name, costCents, year, "", new Date().toISOString()]);
       data.projects.push({ id, fundId: selectedFundId, name, estimatedCostCents: costCents, plannedYear: year });
+      await publishEvent("reserve_fund.project_planned", id, {
+        fund_id: selectedFundId,
+        name,
+        estimated_cost_cents: costCents,
+        planned_year: year,
+      });
       closeModal();
       renderProjects(data.funds.find(f => f.id === selectedFundId));
     } catch (e) { hubAlert(e.message ?? "Add failed"); }
