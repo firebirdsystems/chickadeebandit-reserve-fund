@@ -70,7 +70,7 @@
   <div class="header">
     <h1>🏦 Reserve Fund Dashboard</h1>
     <div id="boardHeader" style="display:none">
-      <button id="newFundBtn" class="btn btn-primary btn-sm" onclick="openNewFundModal()" style="display:none">+ New Fund</button>
+      <button id="newFundBtn" data-testid="new-fund" class="btn btn-primary btn-sm" onclick="openNewFundModal()" style="display:none">+ New Fund</button>
       <button id="boardConfigBtn" class="btn btn-ghost btn-sm" onclick="openBoardConfig()" style="display:none">⚙︎ Board</button>
     </div>
   </div>
@@ -110,7 +110,7 @@
 </div>
 
 <script type="module">
-  import { hubAlert, esc, hubConfirm } from "/hub-sdk.js";
+  import { hubAlert, esc, hubConfirm, hubToday as today } from "/hub-sdk.js";
   import {
     canManageReserve as _canManageReserve,
     fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents,
@@ -182,7 +182,6 @@
     return crypto.randomUUID ? crypto.randomUUID()
       : Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
-  function today() { return new Date().toISOString().slice(0, 10); }
   function fmtDollars(cents) {
     const v = Number(cents ?? 0) / 100;
     const abs = Math.abs(v);
@@ -348,7 +347,7 @@
       const bal  = getFundBalance(f.id);
       const goal = f.goalCents ?? 0;
       const pct  = fundedPct(bal, goal);
-      return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" data-fund-id="${esc(f.id)}">
+      return `<div class="fund-card${f.id === selectedFundId ? " selected" : ""}" data-testid="fund-card" data-fund-id="${esc(f.id)}">
         <div class="fund-name">${esc(f.name)}</div>
         <div class="fund-bal">${fmtDollars(bal)}</div>
         ${goal ? `
@@ -435,7 +434,10 @@
         const nd = new Date(last);
         nd.setMonth(nd.getMonth() + m);
         projBal += rate;
-        projPts.push({ d: nd.toISOString().slice(0, 10), b: projBal });
+        // Local parts: `nd` is built and advanced with local setters, so
+        // toISOString() would label the point a day early west of Greenwich.
+        const dk = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
+        projPts.push({ d: dk, b: projBal });
       }
     }
 
@@ -558,7 +560,7 @@
           <div style="font-weight:600">${esc(p.name)}</div>
           <div class="fund-meta">${fmtDollars(p.estimatedCostCents)} · ${p.plannedYear} · ${gapHtml}</div>
         </div>
-        ${amIBoard() ? `<button class="btn btn-danger btn-sm delete-project" data-project-id="${esc(p.id)}">✕</button>` : ""}
+        ${amIBoard() ? `<button class="btn btn-danger btn-sm delete-project" data-testid="delete-project" data-project-id="${esc(p.id)}">✕</button>` : ""}
       </div>`;
     }).join("");
   }

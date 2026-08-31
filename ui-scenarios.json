@@ -1,0 +1,81 @@
+{
+  "scenarios": [
+    {
+      "name": "the reserve write controls stay hidden until the configured board group contains you",
+      "members": {
+        "viewer": "adult",
+        "other": "adult"
+      },
+      "steps": [
+        {
+          "action": "seedGroup",
+          "group": "social",
+          "name": "Social Committee",
+          "members": [
+            "other"
+          ]
+        },
+        {
+          "action": "seedGroup",
+          "group": "board",
+          "name": "Board of Directors",
+          "members": [
+            "viewer"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_reserve_fund__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": [
+            "{{group:social}}"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, 2500000, 40000, 0, 'everyone', ?, datetime('now'))",
+          "params": [
+            "ui-fund",
+            "Roof replacement reserve",
+            "Funded monthly from dues.",
+            "{{other}}"
+          ]
+        },
+        {
+          "action": "open",
+          "as": "viewer"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"fund-card\"][data-fund-id=\"ui-fund\"]"
+        },
+        {
+          "action": "expectHidden",
+          "as": "viewer",
+          "selector": "[data-testid=\"new-fund\"]"
+        },
+        {
+          "action": "seedRaw",
+          "sql": "UPDATE app_reserve_fund__settings SET value = ? WHERE key = 'board_group_id'",
+          "params": [
+            "{{group:board}}"
+          ]
+        },
+        {
+          "action": "reload",
+          "as": "viewer"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"fund-card\"][data-fund-id=\"ui-fund\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"new-fund\"]"
+        }
+      ]
+    }
+  ]
+}
