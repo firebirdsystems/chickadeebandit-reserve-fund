@@ -9,6 +9,35 @@
   "category": "organization",
   "tags": ["hoa", "reserve", "finance", "capital", "board"],
   "exports": ["funds-list"],
+  "export_schemas": {
+    "funds-list": {
+      "description": "Active funds, for allocation pickers in Dues & Contributions.",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "data_access": {
     "reads": ["family.groups"],
     "writes": []
