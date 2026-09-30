@@ -23,6 +23,155 @@
           "expect": { "status": 403 }
         }
       ]
+    },
+    {
+      "name": "a child can view reserve balances but cannot create or change funds, transactions, projects or imported postings",
+      "members": { "kid": "child", "parent": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_reserve_fund__funds (id, name, goal_cents, created_by, created_at) VALUES ('fund-1', 'Roof', 1000000, ?, '2099-01-01T00:00:00Z')",
+          "params": ["{{parent}}"]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, effective_date, posted_by_id, posted_at) VALUES ('imp-1', 'dues-contributions', 'pay-1', 'payment', 'fund-1', 5000, '2099-01-02', ?, '2099-01-02T00:00:00Z')",
+          "params": ["{{parent}}"]
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id, goal_cents FROM app_reserve_fund__funds",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "fund-1", "goal_cents": 1000000 }] }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id, amount_cents FROM app_reserve_fund__imported_tx",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "imp-1", "amount_cents": 5000 }] }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_reserve_fund__funds (id, name, created_by, created_at) VALUES ('fund-kid', 'Candy', ?, '2099-01-03T00:00:00Z')",
+          "params": ["{{kid}}"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "UPDATE app_reserve_fund__funds SET goal_cents = 0 WHERE id = 'fund-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, date, created_by, created_at) VALUES ('tx-kid', 'fund-1', -5000, '2099-01-03', ?, '2099-01-03T00:00:00Z')",
+          "params": ["{{kid}}"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, planned_year, created_by, created_at) VALUES ('pj-kid', 'fund-1', 'Treehouse', 2099, ?, '2099-01-03T00:00:00Z')",
+          "params": ["{{kid}}"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "DELETE FROM app_reserve_fund__imported_tx WHERE id = 'imp-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "parent",
+          "sql": "SELECT id, goal_cents FROM app_reserve_fund__funds",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "fund-1", "goal_cents": 1000000 }] }
+        }
+      ]
+    },
+    {
+      "name": "a board-group member creates a fund, posts a transaction and plans a project; a plain adult outside the board is refused and sees them unchanged",
+      "members": { "treasurer": "adult", "member": "adult" },
+      "steps": [
+        { "action": "seedGroup", "group": "board", "name": "Board", "members": ["treasurer"] },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_reserve_fund__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": ["{{group:board}}"]
+        },
+        {
+          "action": "db",
+          "as": "treasurer",
+          "sql": "INSERT INTO app_reserve_fund__funds (id, name, goal_cents, created_by, created_at) VALUES (?, ?, ?, ?, ?)",
+          "params": ["f-1", "Roof reserve", 5000000, "{{treasurer}}", "2099-01-01T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "treasurer",
+          "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          "params": ["tx-1", "f-1", 250000, "Opening deposit", "2099-01-01", "{{treasurer}}", "2099-01-01T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "treasurer",
+          "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          "params": ["pr-1", "f-1", "Replace roof", 4000000, 2099, "{{treasurer}}", "2099-01-01T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "treasurer",
+          "sql": "UPDATE app_reserve_fund__funds SET goal_cents = 6000000 WHERE id = 'f-1'",
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          "params": ["tx-2", "f-1", -250000, "Withdrawal", "2099-01-02", "{{member}}", "2099-01-02T00:00:00Z"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "UPDATE app_reserve_fund__manual_tx SET amount_cents = 1 WHERE id = 'tx-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "DELETE FROM app_reserve_fund__projects WHERE id = 'pr-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "UPDATE app_reserve_fund__funds SET goal_cents = 0 WHERE id = 'f-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "SELECT id, goal_cents FROM app_reserve_fund__funds",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "f-1", "goal_cents": 6000000 }] }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "SELECT id, amount_cents FROM app_reserve_fund__manual_tx",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "tx-1", "amount_cents": 250000 }] }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "SELECT id FROM app_reserve_fund__projects",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "pr-1" }] }
+        }
+      ]
     }
   ]
 }
