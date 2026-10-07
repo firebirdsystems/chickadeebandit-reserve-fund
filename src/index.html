@@ -68,10 +68,10 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>🏦 Reserve Fund Dashboard</h1>
+    <h1><span id="page-glyph"></span> Reserve Fund Dashboard</h1>
     <div id="boardHeader" style="display:none">
       <button id="newFundBtn" data-testid="new-fund" class="btn btn-primary btn-sm" onclick="openNewFundModal()" style="display:none">+ New Fund</button>
-      <button id="boardConfigBtn" class="btn btn-ghost btn-sm" onclick="openBoardConfig()" style="display:none">⚙︎ Board</button>
+      <button id="boardConfigBtn" class="btn btn-ghost btn-sm" onclick="openBoardConfig()" style="display:none"><span id="board-config-glyph"></span> Board</button>
     </div>
   </div>
 
@@ -110,11 +110,15 @@
 </div>
 
 <script type="module">
-  import { hubAlert, esc, hubConfirm, hubToday as today } from "/hub-sdk.js";
+  import { hubAlert, esc, hubConfirm, hubToday as today, glyph } from "/hub-sdk.js";
   import {
     canManageReserve as _canManageReserve,
     fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents,
   } from "./logic.js";
+
+  // Static markup cannot call the SDK, so these marks are drawn here.
+  document.getElementById("page-glyph").innerHTML = glyph("bank");
+  document.getElementById("board-config-glyph").innerHTML = glyph("gear");
 
   const CONTEXT      = window.__CONTEXT_URL ?? "";
   const STORE        = window.__STORE_URL   ?? "";
@@ -524,7 +528,7 @@
           ? `<span class="badge badge-gray">Reversal</span>`
           : `<span class="badge badge-gray">Manual</span>`;
       const del = amIBoard() && !t.source
-        ? `<button class="btn btn-danger btn-sm delete-tx" data-tx-id="${esc(t.id)}">✕</button>` : "";
+        ? `<button class="btn btn-danger btn-sm delete-tx" data-tx-id="${esc(t.id)}" aria-label="Delete">${glyph("close", { accent: "currentColor" })}</button>` : "";
       return `<tr>
         <td>${esc(t.date)}</td><td>${esc(t.description)}</td>
         <td class="${cls}">${amtStr}</td><td>${src}</td>
@@ -554,13 +558,13 @@
       const gap     = projectFundingGapCents(p.estimatedCostCents, bal);
       const gapHtml = gap > 0
         ? `<span style="color:#dc2626">Gap: ${fmtDollars(gap)}</span>`
-        : `<span style="color:#065f46">Fully funded ✓</span>`;
+        : `<span style="color:#065f46">Fully funded ${glyph("tick")}</span>`;
       return `<div class="proj-row">
         <div style="flex:1">
           <div style="font-weight:600">${esc(p.name)}</div>
           <div class="fund-meta">${fmtDollars(p.estimatedCostCents)} · ${p.plannedYear} · ${gapHtml}</div>
         </div>
-        ${amIBoard() ? `<button class="btn btn-danger btn-sm delete-project" data-testid="delete-project" data-project-id="${esc(p.id)}">✕</button>` : ""}
+        ${amIBoard() ? `<button class="btn btn-danger btn-sm delete-project" data-testid="delete-project" data-project-id="${esc(p.id)}" aria-label="Delete">${glyph("close", { accent: "currentColor" })}</button>` : ""}
       </div>`;
     }).join("");
   }
