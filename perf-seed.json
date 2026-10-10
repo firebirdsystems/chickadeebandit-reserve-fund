@@ -1,0 +1,1690 @@
+{
+ "groups": [
+  {
+   "key": "board",
+   "name": "Board of Directors",
+   "members": [
+    "{{me}}",
+    "{{partner}}"
+   ]
+  }
+ ],
+ "seed": [
+  {
+   "sql": "INSERT INTO app_reserve_fund__settings (key, value) VALUES (?, ?)",
+   "params": [
+    "board_group_id",
+    "{{group:board}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-400 days','+0 minutes'))",
+   "params": [
+    "perf-fund-roof",
+    "Roof replacement reserve",
+    "Funded monthly from dues.",
+    2500000,
+    40000,
+    0,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-397 days','+0 minutes'))",
+   "params": [
+    "perf-fund-paving",
+    "Driveway and paving",
+    "Resurfacing the shared drive and visitor bays.",
+    1200000,
+    20000,
+    0,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-394 days','+0 minutes'))",
+   "params": [
+    "perf-fund-pool",
+    "Pool and clubhouse",
+    "Pump, liner and clubhouse refurbishment.",
+    1800000,
+    30000,
+    0,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-391 days','+0 minutes'))",
+   "params": [
+    "perf-fund-emergency",
+    "Emergency fund",
+    "Three months of operating costs, untouched unless the board votes.",
+    900000,
+    15000,
+    0,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-388 days','+0 minutes'))",
+   "params": [
+    "perf-fund-playground",
+    "Playground upgrade",
+    "Completed and closed out.",
+    400000,
+    0,
+    1,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 days','+30 minutes'))",
+   "params": [
+    "perf-tx-001",
+    "perf-fund-roof",
+    40000,
+    "October transfer from operating account",
+    "{{date:-5}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 days','+30 minutes'))",
+   "params": [
+    "perf-tx-002",
+    "perf-fund-paving",
+    20000,
+    "October transfer from operating account",
+    "{{date:-5}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 days','+30 minutes'))",
+   "params": [
+    "perf-tx-003",
+    "perf-fund-pool",
+    30000,
+    "October transfer from operating account",
+    "{{date:-5}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 days','+30 minutes'))",
+   "params": [
+    "perf-tx-004",
+    "perf-fund-emergency",
+    15000,
+    "October transfer from operating account",
+    "{{date:-5}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+30 minutes'))",
+   "params": [
+    "perf-tx-005",
+    "perf-fund-roof",
+    40000,
+    "September transfer from operating account",
+    "{{date:-35}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+30 minutes'))",
+   "params": [
+    "perf-tx-006",
+    "perf-fund-paving",
+    20000,
+    "September transfer from operating account",
+    "{{date:-35}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+30 minutes'))",
+   "params": [
+    "perf-tx-007",
+    "perf-fund-pool",
+    30000,
+    "September transfer from operating account",
+    "{{date:-35}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+30 minutes'))",
+   "params": [
+    "perf-tx-008",
+    "perf-fund-emergency",
+    15000,
+    "September transfer from operating account",
+    "{{date:-35}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-65 days','+30 minutes'))",
+   "params": [
+    "perf-tx-009",
+    "perf-fund-roof",
+    40000,
+    "August transfer from operating account",
+    "{{date:-65}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-65 days','+30 minutes'))",
+   "params": [
+    "perf-tx-010",
+    "perf-fund-paving",
+    20000,
+    "August transfer from operating account",
+    "{{date:-65}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-65 days','+30 minutes'))",
+   "params": [
+    "perf-tx-011",
+    "perf-fund-pool",
+    30000,
+    "August transfer from operating account",
+    "{{date:-65}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-65 days','+30 minutes'))",
+   "params": [
+    "perf-tx-012",
+    "perf-fund-emergency",
+    15000,
+    "August transfer from operating account",
+    "{{date:-65}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+30 minutes'))",
+   "params": [
+    "perf-tx-013",
+    "perf-fund-roof",
+    40000,
+    "July transfer from operating account",
+    "{{date:-95}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+30 minutes'))",
+   "params": [
+    "perf-tx-014",
+    "perf-fund-paving",
+    20000,
+    "July transfer from operating account",
+    "{{date:-95}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+30 minutes'))",
+   "params": [
+    "perf-tx-015",
+    "perf-fund-pool",
+    30000,
+    "July transfer from operating account",
+    "{{date:-95}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+30 minutes'))",
+   "params": [
+    "perf-tx-016",
+    "perf-fund-emergency",
+    15000,
+    "July transfer from operating account",
+    "{{date:-95}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+30 minutes'))",
+   "params": [
+    "perf-tx-017",
+    "perf-fund-roof",
+    40000,
+    "June transfer from operating account",
+    "{{date:-125}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+30 minutes'))",
+   "params": [
+    "perf-tx-018",
+    "perf-fund-paving",
+    20000,
+    "June transfer from operating account",
+    "{{date:-125}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+30 minutes'))",
+   "params": [
+    "perf-tx-019",
+    "perf-fund-pool",
+    30000,
+    "June transfer from operating account",
+    "{{date:-125}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+30 minutes'))",
+   "params": [
+    "perf-tx-020",
+    "perf-fund-emergency",
+    15000,
+    "June transfer from operating account",
+    "{{date:-125}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-155 days','+30 minutes'))",
+   "params": [
+    "perf-tx-021",
+    "perf-fund-roof",
+    40000,
+    "May transfer from operating account",
+    "{{date:-155}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-155 days','+30 minutes'))",
+   "params": [
+    "perf-tx-022",
+    "perf-fund-paving",
+    20000,
+    "May transfer from operating account",
+    "{{date:-155}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-155 days','+30 minutes'))",
+   "params": [
+    "perf-tx-023",
+    "perf-fund-pool",
+    30000,
+    "May transfer from operating account",
+    "{{date:-155}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-155 days','+30 minutes'))",
+   "params": [
+    "perf-tx-024",
+    "perf-fund-emergency",
+    15000,
+    "May transfer from operating account",
+    "{{date:-155}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-185 days','+30 minutes'))",
+   "params": [
+    "perf-tx-025",
+    "perf-fund-roof",
+    40000,
+    "April transfer from operating account",
+    "{{date:-185}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-185 days','+30 minutes'))",
+   "params": [
+    "perf-tx-026",
+    "perf-fund-paving",
+    20000,
+    "April transfer from operating account",
+    "{{date:-185}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-185 days','+30 minutes'))",
+   "params": [
+    "perf-tx-027",
+    "perf-fund-pool",
+    30000,
+    "April transfer from operating account",
+    "{{date:-185}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-185 days','+30 minutes'))",
+   "params": [
+    "perf-tx-028",
+    "perf-fund-emergency",
+    15000,
+    "April transfer from operating account",
+    "{{date:-185}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-215 days','+30 minutes'))",
+   "params": [
+    "perf-tx-029",
+    "perf-fund-roof",
+    40000,
+    "March transfer from operating account",
+    "{{date:-215}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-215 days','+30 minutes'))",
+   "params": [
+    "perf-tx-030",
+    "perf-fund-paving",
+    20000,
+    "March transfer from operating account",
+    "{{date:-215}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-215 days','+30 minutes'))",
+   "params": [
+    "perf-tx-031",
+    "perf-fund-pool",
+    30000,
+    "March transfer from operating account",
+    "{{date:-215}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-215 days','+30 minutes'))",
+   "params": [
+    "perf-tx-032",
+    "perf-fund-emergency",
+    15000,
+    "March transfer from operating account",
+    "{{date:-215}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-245 days','+30 minutes'))",
+   "params": [
+    "perf-tx-033",
+    "perf-fund-roof",
+    40000,
+    "February transfer from operating account",
+    "{{date:-245}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-245 days','+30 minutes'))",
+   "params": [
+    "perf-tx-034",
+    "perf-fund-paving",
+    20000,
+    "February transfer from operating account",
+    "{{date:-245}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-245 days','+30 minutes'))",
+   "params": [
+    "perf-tx-035",
+    "perf-fund-pool",
+    30000,
+    "February transfer from operating account",
+    "{{date:-245}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-245 days','+30 minutes'))",
+   "params": [
+    "perf-tx-036",
+    "perf-fund-emergency",
+    15000,
+    "February transfer from operating account",
+    "{{date:-245}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-275 days','+30 minutes'))",
+   "params": [
+    "perf-tx-037",
+    "perf-fund-roof",
+    40000,
+    "January transfer from operating account",
+    "{{date:-275}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-275 days','+30 minutes'))",
+   "params": [
+    "perf-tx-038",
+    "perf-fund-paving",
+    20000,
+    "January transfer from operating account",
+    "{{date:-275}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-275 days','+30 minutes'))",
+   "params": [
+    "perf-tx-039",
+    "perf-fund-pool",
+    30000,
+    "January transfer from operating account",
+    "{{date:-275}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-275 days','+30 minutes'))",
+   "params": [
+    "perf-tx-040",
+    "perf-fund-emergency",
+    15000,
+    "January transfer from operating account",
+    "{{date:-275}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-305 days','+30 minutes'))",
+   "params": [
+    "perf-tx-041",
+    "perf-fund-roof",
+    40000,
+    "December transfer from operating account",
+    "{{date:-305}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-305 days','+30 minutes'))",
+   "params": [
+    "perf-tx-042",
+    "perf-fund-paving",
+    20000,
+    "December transfer from operating account",
+    "{{date:-305}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-305 days','+30 minutes'))",
+   "params": [
+    "perf-tx-043",
+    "perf-fund-pool",
+    30000,
+    "December transfer from operating account",
+    "{{date:-305}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-305 days','+30 minutes'))",
+   "params": [
+    "perf-tx-044",
+    "perf-fund-emergency",
+    15000,
+    "December transfer from operating account",
+    "{{date:-305}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-335 days','+30 minutes'))",
+   "params": [
+    "perf-tx-045",
+    "perf-fund-roof",
+    40000,
+    "November transfer from operating account",
+    "{{date:-335}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-335 days','+30 minutes'))",
+   "params": [
+    "perf-tx-046",
+    "perf-fund-paving",
+    20000,
+    "November transfer from operating account",
+    "{{date:-335}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-335 days','+30 minutes'))",
+   "params": [
+    "perf-tx-047",
+    "perf-fund-pool",
+    30000,
+    "November transfer from operating account",
+    "{{date:-335}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-335 days','+30 minutes'))",
+   "params": [
+    "perf-tx-048",
+    "perf-fund-emergency",
+    15000,
+    "November transfer from operating account",
+    "{{date:-335}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-365 days','+30 minutes'))",
+   "params": [
+    "perf-tx-049",
+    "perf-fund-roof",
+    40000,
+    "October transfer from operating account",
+    "{{date:-365}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-365 days','+30 minutes'))",
+   "params": [
+    "perf-tx-050",
+    "perf-fund-paving",
+    20000,
+    "October transfer from operating account",
+    "{{date:-365}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-365 days','+30 minutes'))",
+   "params": [
+    "perf-tx-051",
+    "perf-fund-pool",
+    30000,
+    "October transfer from operating account",
+    "{{date:-365}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-365 days','+30 minutes'))",
+   "params": [
+    "perf-tx-052",
+    "perf-fund-emergency",
+    15000,
+    "October transfer from operating account",
+    "{{date:-365}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-398 days','+30 minutes'))",
+   "params": [
+    "perf-tx-053",
+    "perf-fund-roof",
+    850000,
+    "Opening balance carried over from the old spreadsheet",
+    "{{date:-398}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-210 days','+30 minutes'))",
+   "params": [
+    "perf-tx-054",
+    "perf-fund-roof",
+    -124000,
+    "Gutter and flashing repair, north block",
+    "{{date:-210}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+30 minutes'))",
+   "params": [
+    "perf-tx-055",
+    "perf-fund-roof",
+    -38000,
+    "Roof survey, Ridgeline Surveyors",
+    "{{date:-95}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-12 days','+30 minutes'))",
+   "params": [
+    "perf-tx-056",
+    "perf-fund-roof",
+    4200,
+    "Interest for the quarter",
+    "{{date:-12}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-396 days','+30 minutes'))",
+   "params": [
+    "perf-tx-057",
+    "perf-fund-paving",
+    310000,
+    "Opening balance",
+    "{{date:-396}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-160 days','+30 minutes'))",
+   "params": [
+    "perf-tx-058",
+    "perf-fund-paving",
+    -86000,
+    "Pothole patching by the entrance",
+    "{{date:-160}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-44 days','+30 minutes'))",
+   "params": [
+    "perf-tx-059",
+    "perf-fund-paving",
+    -22500,
+    "Line repainting, visitor bays",
+    "{{date:-44}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-12 days','+30 minutes'))",
+   "params": [
+    "perf-tx-060",
+    "perf-fund-paving",
+    1900,
+    "Interest for the quarter",
+    "{{date:-12}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-395 days','+30 minutes'))",
+   "params": [
+    "perf-tx-061",
+    "perf-fund-pool",
+    520000,
+    "Opening balance",
+    "{{date:-395}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-250 days','+30 minutes'))",
+   "params": [
+    "perf-tx-062",
+    "perf-fund-pool",
+    -212000,
+    "Replacement pool pump",
+    "{{date:-250}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-120 days','+30 minutes'))",
+   "params": [
+    "perf-tx-063",
+    "perf-fund-pool",
+    -64000,
+    "Clubhouse door and lock",
+    "{{date:-120}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-33 days','+30 minutes'))",
+   "params": [
+    "perf-tx-064",
+    "perf-fund-pool",
+    -18000,
+    "Safety signage",
+    "{{date:-33}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-12 days','+30 minutes'))",
+   "params": [
+    "perf-tx-065",
+    "perf-fund-pool",
+    2600,
+    "Interest for the quarter",
+    "{{date:-12}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-394 days','+30 minutes'))",
+   "params": [
+    "perf-tx-066",
+    "perf-fund-emergency",
+    600000,
+    "Opening balance",
+    "{{date:-394}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-140 days','+30 minutes'))",
+   "params": [
+    "perf-tx-067",
+    "perf-fund-emergency",
+    -95000,
+    "Storm clean-up, fallen tree on the lane",
+    "{{date:-140}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-88 days','+30 minutes'))",
+   "params": [
+    "perf-tx-068",
+    "perf-fund-emergency",
+    95000,
+    "Insurance payout for the storm clean-up",
+    "{{date:-88}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-12 days','+30 minutes'))",
+   "params": [
+    "perf-tx-069",
+    "perf-fund-emergency",
+    3100,
+    "Interest for the quarter",
+    "{{date:-12}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-393 days','+30 minutes'))",
+   "params": [
+    "perf-tx-070",
+    "perf-fund-playground",
+    380000,
+    "Opening balance",
+    "{{date:-393}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-300 days','+30 minutes'))",
+   "params": [
+    "perf-tx-071",
+    "perf-fund-playground",
+    45000,
+    "Summer fete proceeds",
+    "{{date:-300}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-270 days','+30 minutes'))",
+   "params": [
+    "perf-tx-072",
+    "perf-fund-playground",
+    -401500,
+    "New climbing frame and safety surface",
+    "{{date:-270}}",
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-262 days','+30 minutes'))",
+   "params": [
+    "perf-tx-073",
+    "perf-fund-playground",
+    -23500,
+    "Benches",
+    "{{date:-262}}",
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-3 days','+60 minutes'))",
+   "params": [
+    "perf-imp-001",
+    "dues-contributions",
+    "perf-pay-001",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 1",
+    "{{date:-3}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-4 days','+60 minutes'))",
+   "params": [
+    "perf-imp-002",
+    "dues-contributions",
+    "perf-pay-002",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 2",
+    "{{date:-4}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 days','+60 minutes'))",
+   "params": [
+    "perf-imp-003",
+    "dues-contributions",
+    "perf-pay-003",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 3",
+    "{{date:-5}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-6 days','+60 minutes'))",
+   "params": [
+    "perf-imp-004",
+    "dues-contributions",
+    "perf-pay-004",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 4",
+    "{{date:-6}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-8 days','+60 minutes'))",
+   "params": [
+    "perf-imp-005",
+    "dues-contributions",
+    "perf-pay-005",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 6",
+    "{{date:-8}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-9 days','+60 minutes'))",
+   "params": [
+    "perf-imp-006",
+    "dues-contributions",
+    "perf-pay-006",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 7",
+    "{{date:-9}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-10 days','+60 minutes'))",
+   "params": [
+    "perf-imp-007",
+    "dues-contributions",
+    "perf-pay-007",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 8",
+    "{{date:-10}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-33 days','+60 minutes'))",
+   "params": [
+    "perf-imp-008",
+    "dues-contributions",
+    "perf-pay-008",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 1",
+    "{{date:-33}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-34 days','+60 minutes'))",
+   "params": [
+    "perf-imp-009",
+    "dues-contributions",
+    "perf-pay-009",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 2",
+    "{{date:-34}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+60 minutes'))",
+   "params": [
+    "perf-imp-010",
+    "dues-contributions",
+    "perf-pay-010",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 3",
+    "{{date:-35}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-37 days','+60 minutes'))",
+   "params": [
+    "perf-imp-011",
+    "dues-contributions",
+    "perf-pay-011",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 5",
+    "{{date:-37}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-38 days','+60 minutes'))",
+   "params": [
+    "perf-imp-012",
+    "dues-contributions",
+    "perf-pay-012",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 6",
+    "{{date:-38}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-39 days','+60 minutes'))",
+   "params": [
+    "perf-imp-013",
+    "dues-contributions",
+    "perf-pay-013",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 7",
+    "{{date:-39}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-40 days','+60 minutes'))",
+   "params": [
+    "perf-imp-014",
+    "dues-contributions",
+    "perf-pay-014",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 8",
+    "{{date:-40}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-63 days','+60 minutes'))",
+   "params": [
+    "perf-imp-015",
+    "dues-contributions",
+    "perf-pay-015",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 1",
+    "{{date:-63}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-64 days','+60 minutes'))",
+   "params": [
+    "perf-imp-016",
+    "dues-contributions",
+    "perf-pay-016",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 2",
+    "{{date:-64}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-66 days','+60 minutes'))",
+   "params": [
+    "perf-imp-017",
+    "dues-contributions",
+    "perf-pay-017",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 4",
+    "{{date:-66}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-67 days','+60 minutes'))",
+   "params": [
+    "perf-imp-018",
+    "dues-contributions",
+    "perf-pay-018",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 5",
+    "{{date:-67}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-68 days','+60 minutes'))",
+   "params": [
+    "perf-imp-019",
+    "dues-contributions",
+    "perf-pay-019",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 6",
+    "{{date:-68}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-69 days','+60 minutes'))",
+   "params": [
+    "perf-imp-020",
+    "dues-contributions",
+    "perf-pay-020",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 7",
+    "{{date:-69}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-93 days','+60 minutes'))",
+   "params": [
+    "perf-imp-021",
+    "dues-contributions",
+    "perf-pay-021",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 1",
+    "{{date:-93}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+60 minutes'))",
+   "params": [
+    "perf-imp-022",
+    "dues-contributions",
+    "perf-pay-022",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 3",
+    "{{date:-95}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-96 days','+60 minutes'))",
+   "params": [
+    "perf-imp-023",
+    "dues-contributions",
+    "perf-pay-023",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 4",
+    "{{date:-96}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-97 days','+60 minutes'))",
+   "params": [
+    "perf-imp-024",
+    "dues-contributions",
+    "perf-pay-024",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 5",
+    "{{date:-97}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-98 days','+60 minutes'))",
+   "params": [
+    "perf-imp-025",
+    "dues-contributions",
+    "perf-pay-025",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 6",
+    "{{date:-98}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-100 days','+60 minutes'))",
+   "params": [
+    "perf-imp-026",
+    "dues-contributions",
+    "perf-pay-026",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 8",
+    "{{date:-100}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-124 days','+60 minutes'))",
+   "params": [
+    "perf-imp-027",
+    "dues-contributions",
+    "perf-pay-027",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 2",
+    "{{date:-124}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+60 minutes'))",
+   "params": [
+    "perf-imp-028",
+    "dues-contributions",
+    "perf-pay-028",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 3",
+    "{{date:-125}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-126 days','+60 minutes'))",
+   "params": [
+    "perf-imp-029",
+    "dues-contributions",
+    "perf-pay-029",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 4",
+    "{{date:-126}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-127 days','+60 minutes'))",
+   "params": [
+    "perf-imp-030",
+    "dues-contributions",
+    "perf-pay-030",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 5",
+    "{{date:-127}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-129 days','+60 minutes'))",
+   "params": [
+    "perf-imp-031",
+    "dues-contributions",
+    "perf-pay-031",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 7",
+    "{{date:-129}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-130 days','+60 minutes'))",
+   "params": [
+    "perf-imp-032",
+    "dues-contributions",
+    "perf-pay-032",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 8",
+    "{{date:-130}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-153 days','+60 minutes'))",
+   "params": [
+    "perf-imp-033",
+    "dues-contributions",
+    "perf-pay-033",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 1",
+    "{{date:-153}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-154 days','+60 minutes'))",
+   "params": [
+    "perf-imp-034",
+    "dues-contributions",
+    "perf-pay-034",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 2",
+    "{{date:-154}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-155 days','+60 minutes'))",
+   "params": [
+    "perf-imp-035",
+    "dues-contributions",
+    "perf-pay-035",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 3",
+    "{{date:-155}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-156 days','+60 minutes'))",
+   "params": [
+    "perf-imp-036",
+    "dues-contributions",
+    "perf-pay-036",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 4",
+    "{{date:-156}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-158 days','+60 minutes'))",
+   "params": [
+    "perf-imp-037",
+    "dues-contributions",
+    "perf-pay-037",
+    "payment",
+    "perf-fund-paving",
+    12500,
+    "Reserve share of dues, Unit 6",
+    "{{date:-158}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-159 days','+60 minutes'))",
+   "params": [
+    "perf-imp-038",
+    "dues-contributions",
+    "perf-pay-038",
+    "payment",
+    "perf-fund-pool",
+    12500,
+    "Reserve share of dues, Unit 7",
+    "{{date:-159}}",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-160 days','+60 minutes'))",
+   "params": [
+    "perf-imp-039",
+    "dues-contributions",
+    "perf-pay-039",
+    "payment",
+    "perf-fund-roof",
+    12500,
+    "Reserve share of dues, Unit 8",
+    "{{date:-160}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__imported_tx (id, source_app_id, source_ref_id, operation, fund_id, amount_cents, description, effective_date, posted_by_id, posted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-2 days','+0 minutes'))",
+   "params": [
+    "perf-imp-rev-1",
+    "dues-contributions",
+    "perf-pay-004",
+    "reversal",
+    "perf-fund-paving",
+    -12500,
+    "Reserve share of dues, Unit 4 (payment reversed)",
+    "{{date:-2}}",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-300 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-01",
+    "perf-fund-roof",
+    "Full re-roof, north block",
+    1450000,
+    2028,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-282 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-02",
+    "perf-fund-roof",
+    "Full re-roof, south block",
+    1380000,
+    2030,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-264 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-03",
+    "perf-fund-roof",
+    "Skylight replacement",
+    220000,
+    2027,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-246 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-04",
+    "perf-fund-roof",
+    "Solar panel feasibility study",
+    45000,
+    2026,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-228 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-05",
+    "perf-fund-paving",
+    "Resurface the main drive",
+    780000,
+    2027,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-210 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-06",
+    "perf-fund-paving",
+    "Visitor bay extension",
+    310000,
+    2029,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-192 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-07",
+    "perf-fund-paving",
+    "Drainage channel by the gate",
+    95000,
+    2026,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-174 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-08",
+    "perf-fund-pool",
+    "Pool liner replacement",
+    640000,
+    2028,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-156 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-09",
+    "perf-fund-pool",
+    "Clubhouse kitchen refit",
+    520000,
+    2029,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-138 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-10",
+    "perf-fund-pool",
+    "Heat pump for the pool",
+    410000,
+    2031,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-120 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-11",
+    "perf-fund-pool",
+    "Changing room refurbishment",
+    280000,
+    2027,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-102 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-12",
+    "perf-fund-emergency",
+    "Boundary wall repointing",
+    160000,
+    2027,
+    "everyone",
+    "{{partner}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-84 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-13",
+    "perf-fund-playground",
+    "Climbing frame and safety surface",
+    401500,
+    2025,
+    "everyone",
+    "{{me}}"
+   ]
+  },
+  {
+   "sql": "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-66 days','+0 minutes'))",
+   "params": [
+    "perf-rf-proj-14",
+    "perf-fund-roof",
+    "Chimney stack rebuild",
+    185000,
+    2032,
+    "everyone",
+    "{{partner}}"
+   ]
+  }
+ ]
+}

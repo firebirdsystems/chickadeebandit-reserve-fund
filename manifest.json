@@ -51,7 +51,10 @@
     "funds": {"sql": "SELECT * FROM app_reserve_fund__funds ORDER BY created_at ASC LIMIT 200"},
     "projects": {"sql": "SELECT * FROM app_reserve_fund__projects ORDER BY created_at DESC LIMIT 500"},
     "manual_totals": {"sql": "SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__manual_tx GROUP BY fund_id"},
-    "board_group": {"sql": "SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"}
+    "board_group": {"sql": "SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"},
+    "imported_tx": {
+      "sql": "SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__imported_tx GROUP BY fund_id"
+    }
   },
   "db_plaintext_columns": ["operation"],
   "icon": "🏦",
