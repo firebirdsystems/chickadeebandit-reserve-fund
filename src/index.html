@@ -50,6 +50,8 @@
     .proj-row:last-child { border-bottom: none; }
     .empty { padding: 28px 0; text-align: center; color: var(--hub-text-muted, #6b7280); font-size: 0.875rem; }
     .no-funds { padding: 48px 16px; text-align: center; color: var(--hub-text-muted, #6b7280); }
+    .load-error { grid-column: 1 / -1; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--hub-tint-danger, #fee2e2); color: var(--hub-tint-danger-fg, #b91c1c); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    .load-error-retry { background: none; border: 1px solid currentColor; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600; color: inherit; cursor: pointer; flex-shrink: 0; }
     .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
     .detail-title { font-size: 1.1rem; font-weight: 700; flex: 1; }
     .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -178,7 +180,17 @@
       try { msg = (await res.json()).error ?? msg; } catch {}
       throw new Error(msg);
     }
-    return res.json();
+    const json = await res.json().catch(() => null);
+    if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || `DB error ${res.status}`);
+    return json;
+  }
+
+  // Funds, transactions and projects are board-only writes. The hub answers a
+  // write from anyone else with HTTP 200 and `changed: 0` rather than an error.
+  function requireChanged(res) {
+    if (DB && Number(res?.changed ?? 0) === 0) {
+      throw new Error("That was not saved. Only board members can change the reserve fund.");
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -247,7 +259,14 @@
       db("SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__manual_tx GROUP BY fund_id"),
       db("SELECT fund_id, SUM(amount_cents) AS total_cents FROM app_reserve_fund__imported_tx GROUP BY fund_id"),
       db("SELECT value FROM app_reserve_fund__settings WHERE key = 'board_group_id'"),
-      CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(r => r.ok ? r.json() : {}).catch(() => ({})) : Promise.resolve({}),
+      // A failed read throws: with no groups, every board check is silently false.
+      CONTEXT ? fetch(`${CONTEXT}?keys=family.groups`).then(async res => {
+        const ctx = await res.json().catch(() => null);
+        if (!res.ok || ctx === null || typeof ctx !== "object" || Array.isArray(ctx)) throw new Error("Couldn’t reach the hub. Try again.");
+        // A 200 that names the key in `$errors` is the hub saying it could not read it.
+        if (Array.isArray(ctx.$errors) && ctx.$errors.includes("family.groups")) throw new Error("Couldn’t reach the hub. Try again.");
+        return ctx;
+      }) : Promise.resolve({}),
     ]);
 
     fundTotals = new Map();
@@ -326,6 +345,8 @@
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+  let loadFailed = false;
+
   function render() {
     const funds = data.funds.filter(f => !f.archived);
     const board = amIBoard();
@@ -338,6 +359,16 @@
     const noFunds = document.getElementById("noFunds");
     const grid    = document.getElementById("fundGrid");
     const detail  = document.getElementById("detailCard");
+
+    // Until the first load succeeds, neither "No reserve funds yet" nor the
+    // Board notice is known to be true.
+    if (loadFailed) {
+      grid.innerHTML = `<div class="load-error" data-testid="load-error" role="alert"><span>Couldn’t load the reserve funds.</span> <button type="button" class="load-error-retry" data-testid="load-retry">Try again</button></div>`;
+      noFunds.style.display = "none";
+      detail.style.display  = "none";
+      document.getElementById("boardNotice").style.display = "none";
+      return;
+    }
 
     if (!funds.length) {
       grid.innerHTML = "";
@@ -611,8 +642,8 @@
     if (!Number.isInteger(goalCents) || goalCents < 0 || !Number.isInteger(rateCents) || rateCents < 0) return;
     try {
       if (existingId) {
-        await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
-          [name, desc, goalCents, rateCents, existingId]);
+        requireChanged(await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
+          [name, desc, goalCents, rateCents, existingId]));
         const f = data.funds.find(f => f.id === existingId);
         if (f) Object.assign(f, { name, description: desc, goalCents, monthlyContributionRateCents: rateCents });
       } else {
@@ -639,7 +670,7 @@
     const ok = await hubConfirm({ message: `Archive "${fund.name}"?`, description: "Hidden from the dashboard. Transaction history is preserved.", confirmLabel: "Archive", destructive: true });
     if (!ok) return;
     try {
-      await db("UPDATE app_reserve_fund__funds SET archived=1 WHERE id=?", [fund.id]);
+      requireChanged(await db("UPDATE app_reserve_fund__funds SET archived=1 WHERE id=?", [fund.id]));
       fund.archived = true;
       selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
       render();
@@ -709,7 +740,7 @@
     const ok = await hubConfirm({ message: "Delete this transaction?", confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     try {
-      await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]);
+      requireChanged(await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]));
       const removed = data.manualTx.find(t => t.id === txId);
       data.manualTx = data.manualTx.filter(t => t.id !== txId);
       if (removed) adjustFundTotal(removed.fundId, -Number(removed.amountCents || 0));
@@ -766,7 +797,7 @@
     const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     try {
-      await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]);
+      requireChanged(await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]));
       data.projects = data.projects.filter(proj => proj.id !== p.id);
       renderProjects(data.funds.find(f => f.id === selectedFundId));
     } catch (e) { hubAlert(e.message ?? "Delete failed"); }
@@ -837,7 +868,18 @@
     if (button) deleteProject(button.dataset.projectId);
   });
 
-  load().then(handleDeepLink);
+  // A failed first read draws the banner in place of the funds; it stays
+  // until a read succeeds.
+  function firstLoad() {
+    return load().then(
+      () => { if (loadFailed) { loadFailed = false; render(); } handleDeepLink(); },
+      () => { loadFailed = true; render(); },
+    );
+  }
+  document.getElementById("fundGrid").addEventListener("click", event => {
+    if (event.target instanceof Element && event.target.closest('[data-testid="load-retry"]')) firstLoad();
+  });
+  firstLoad();
 </script>
 </body>
 </html>
