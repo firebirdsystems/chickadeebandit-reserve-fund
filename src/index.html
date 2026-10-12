@@ -185,11 +185,16 @@
     return json;
   }
 
+  // A failed write shows one fixed line for the action. Only wording this app
+  // wrote for the reader (marked `forUser` where it is thrown) is shown as is;
+  // the hub's own error text goes to the console.
+  function failText(e, line) { if (!e?.forUser) console.error(e); return e?.forUser ? e.message : line; }
+
   // Funds, transactions and projects are board-only writes. The hub answers a
   // write from anyone else with HTTP 200 and `changed: 0` rather than an error.
   function requireChanged(res) {
     if (DB && Number(res?.changed ?? 0) === 0) {
-      throw new Error("That was not saved. Only board members can change the reserve fund.");
+      throw Object.assign(new Error("That was not saved. Only board members can change the reserve fund."), { forUser: true });
     }
   }
 
@@ -659,9 +664,10 @@
       try {
         await publishFundsList();
       } catch (error) {
-        hubAlert(`Fund saved, but the cross-app funds list needs retrying: ${error.message}`);
+        console.error(error);
+        hubAlert("Fund saved, but the cross-app funds list needs retrying.");
       }
-    } catch (e) { hubAlert(e.message ?? "Save failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t save the fund — try again.")); }
   };
 
   window.archiveFund = async function() {
@@ -677,9 +683,10 @@
       try {
         await publishFundsList();
       } catch (error) {
-        hubAlert(`Fund archived, but the cross-app funds list needs retrying: ${error.message}`);
+        console.error(error);
+        hubAlert("Fund archived, but the cross-app funds list needs retrying.");
       }
-    } catch (e) { hubAlert(e.message ?? "Archive failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t archive the fund — try again.")); }
   };
 
   // ── Transaction modals ────────────────────────────────────────────────────
@@ -733,7 +740,7 @@
       });
       closeModal();
       render();
-    } catch (e) { hubAlert(e.message ?? "Add failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t add the transaction — try again.")); }
   };
 
   window.deleteTx = async function(txId) {
@@ -745,7 +752,7 @@
       data.manualTx = data.manualTx.filter(t => t.id !== txId);
       if (removed) adjustFundTotal(removed.fundId, -Number(removed.amountCents || 0));
       render();
-    } catch (e) { hubAlert(e.message ?? "Delete failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t delete the transaction — try again.")); }
   };
 
   // ── Project modals ────────────────────────────────────────────────────────
@@ -788,7 +795,7 @@
       });
       closeModal();
       renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { hubAlert(e.message ?? "Add failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t add the project — try again.")); }
   };
 
   window.deleteProject = async function(projectId) {
@@ -800,7 +807,7 @@
       requireChanged(await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]));
       data.projects = data.projects.filter(proj => proj.id !== p.id);
       renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { hubAlert(e.message ?? "Delete failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t delete the project — try again.")); }
   };
 
   // ── Board group configuration (admin-only; writes board_group_id via the
@@ -846,7 +853,7 @@
       boardGroupId = groupId;
       closeModal();
       render();
-    } catch (e) { hubAlert(e.message ?? "Save failed"); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t save the board group — try again.")); }
   };
 
   function handleDeepLink() {
