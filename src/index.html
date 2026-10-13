@@ -192,11 +192,16 @@
 
   // Funds, transactions and projects are board-only writes. The hub answers a
   // write from anyone else with HTTP 200 and `changed: 0` rather than an error.
+  // It answers the same way when the row is already gone, so the line names both.
   function requireChanged(res) {
     if (DB && Number(res?.changed ?? 0) === 0) {
-      throw Object.assign(new Error("That was not saved. Only board members can change the reserve fund."), { forUser: true });
+      throw Object.assign(new Error("That was not saved. It may already be gone, or you may no longer be on the board — reload to check."), { forUser: true });
     }
   }
+
+  // One create or save at a time: a second click while the first is still in
+  // flight would write the row twice.
+  let saving = false;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function uid() {
@@ -645,6 +650,8 @@
     const rateCents = toCents(document.getElementById("nf-rate").value || "0");
     const desc = document.getElementById("nf-desc").value.trim();
     if (!Number.isInteger(goalCents) || goalCents < 0 || !Number.isInteger(rateCents) || rateCents < 0) return;
+    if (saving) return;
+    saving = true;
     try {
       if (existingId) {
         requireChanged(await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
@@ -661,13 +668,14 @@
       }
       closeModal();
       render();
-      try {
-        await publishFundsList();
-      } catch (error) {
-        console.error(error);
-        hubAlert("Fund saved, but the cross-app funds list needs retrying.");
-      }
-    } catch (e) { hubAlert(failText(e, "Couldn’t save the fund — try again.")); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t save the fund — try again.")); return; }
+    finally { saving = false; }
+    try {
+      await publishFundsList();
+    } catch (error) {
+      console.error(error);
+      hubAlert("Fund saved, but the cross-app funds list needs retrying.");
+    }
   };
 
   window.archiveFund = async function() {
@@ -725,22 +733,27 @@
     if (!desc || !Number.isInteger(amountCents) || amountCents <= 0 || !date) return;
     const id = uid();
     const signedCents = type === "withdrawal" ? -amountCents : amountCents;
+    const fundId = selectedFundId;
+    if (saving) return;
+    saving = true;
     try {
       await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
-        [id, selectedFundId, signedCents, desc, date, "", new Date().toISOString()]);
-      data.manualTx.push({ id, fundId: selectedFundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
+        [id, fundId, signedCents, desc, date, "", new Date().toISOString()]);
+      data.manualTx.push({ id, fundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
       // Keep the SQL-derived total in step with the optimistic row, or the
       // balance would ignore the transaction until the next full load.
-      adjustFundTotal(selectedFundId, signedCents);
-      await publishEvent("reserve_fund.transaction_recorded", id, {
-        fund_id: selectedFundId,
-        amount_cents: signedCents,
-        description: desc,
-        date,
-      });
+      adjustFundTotal(fundId, signedCents);
       closeModal();
       render();
-    } catch (e) { hubAlert(failText(e, "Couldn’t add the transaction — try again.")); }
+    } catch (e) { hubAlert(failText(e, "Couldn’t add the transaction — try again.")); return; }
+    finally { saving = false; }
+    // The row is stored: the form is already closed, the event follows.
+    await publishEvent("reserve_fund.transaction_recorded", id, {
+      fund_id: fundId,
+      amount_cents: signedCents,
+      description: desc,
+      date,
+    });
   };
 
   window.deleteTx = async function(txId) {
@@ -783,19 +796,24 @@
     const year = parseInt(document.getElementById("proj-year").value);
     if (!name || !Number.isInteger(costCents) || costCents < 0 || !Number.isInteger(year)) return;
     const id = uid();
+    const fundId = selectedFundId;
+    if (saving) return;
+    saving = true;
     try {
       await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
-        [id, selectedFundId, name, costCents, year, "", new Date().toISOString()]);
-      data.projects.push({ id, fundId: selectedFundId, name, estimatedCostCents: costCents, plannedYear: year });
-      await publishEvent("reserve_fund.project_planned", id, {
-        fund_id: selectedFundId,
-        name,
-        estimated_cost_cents: costCents,
-        planned_year: year,
-      });
+        [id, fundId, name, costCents, year, "", new Date().toISOString()]);
+      data.projects.push({ id, fundId, name, estimatedCostCents: costCents, plannedYear: year });
       closeModal();
-      renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { hubAlert(failText(e, "Couldn’t add the project — try again.")); }
+      renderDetail();
+    } catch (e) { hubAlert(failText(e, "Couldn’t add the project — try again.")); return; }
+    finally { saving = false; }
+    // The row is stored: the form is already closed, the event follows.
+    await publishEvent("reserve_fund.project_planned", id, {
+      fund_id: fundId,
+      name,
+      estimated_cost_cents: costCents,
+      planned_year: year,
+    });
   };
 
   window.deleteProject = async function(projectId) {
