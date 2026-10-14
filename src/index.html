@@ -196,7 +196,7 @@
   // statement matched no row — the row is already gone.
   function requireChanged(res) {
     if (DB && Number(res?.changed ?? 0) === 0) {
-      throw Object.assign(new Error("That was not saved. It may already be gone, or you may no longer be on the board — reload to check."), { forUser: true });
+      throw Object.assign(new Error("That was not saved. It may already be gone — reload to check."), { forUser: true });
     }
   }
 
