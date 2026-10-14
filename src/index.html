@@ -190,9 +190,10 @@
   // the hub's own error text goes to the console.
   function failText(e, line) { if (!e?.forUser) console.error(e); return e?.forUser ? e.message : line; }
 
-  // Funds, transactions and projects are board-only writes. The hub answers a
-  // write from anyone else with HTTP 200 and `changed: 0` rather than an error.
-  // It answers the same way when the row is already gone, so the line names both.
+  // Funds, transactions and projects are board-only writes
+  // (`write_privileged_only`): the hub refuses a write from anyone else with a
+  // 403, which the request helper throws. HTTP 200 with `changed: 0` means the
+  // statement matched no row — the row is already gone.
   function requireChanged(res) {
     if (DB && Number(res?.changed ?? 0) === 0) {
       throw Object.assign(new Error("That was not saved. It may already be gone, or you may no longer be on the board — reload to check."), { forUser: true });
