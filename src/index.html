@@ -116,6 +116,7 @@
   import {
     canManageReserve as _canManageReserve,
     fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents, failureLine,
+    outcomeUnknown, storedDiffers,
   } from "./logic.js";
 
   // Static markup cannot call the SDK, so these marks are drawn here.
@@ -206,6 +207,30 @@
   // One create or save at a time: a second click while the first is still in
   // flight would write the row twice.
   let saving = false;
+
+  // A create's id is the open form's, minted on its first Save and sent on
+  // every retry: a try whose answer was lost may have stored the row, and a
+  // second press must find that row rather than add another. Closing the form
+  // forgets it.
+  function formRowId() { return modalEl ? (modalEl.dataset.rowId ??= uid()) : uid(); }
+  const SAVED_AS_FIRST = "Saved as first entered — check it and update what changed.";
+
+  // Runs a create's INSERT. On an unknown outcome the row is read back by its
+  // pinned id: found means an earlier try landed, and the stored row comes
+  // back for the success path to run once. Otherwise null (this try stored it).
+  // Not found, or the read failed: the write's own error, id still pinned.
+  async function insertPinned(table, id, sql, params) {
+    try { await db(sql, params); return null; }
+    catch (e) {
+      if (!outcomeUnknown(e)) throw e;
+      let stored = null;
+      try { stored = (await db(`SELECT * FROM ${table} WHERE id = ?`, [id])).rows?.[0] ?? null; }
+      catch (readErr) { console.error(readErr); }
+      if (!stored) throw e;
+      console.error(e);
+      return stored;
+    }
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function uid() {
@@ -647,6 +672,7 @@
   };
 
   window.saveFund = async function() {
+    const dialog = modalEl; // close only this dialog, not one opened since
     const existingId = window._editingFundId ?? "";
     const name = document.getElementById("nf-name").value.trim();
     if (!name) { document.getElementById("nf-name").focus(); return; }
@@ -656,6 +682,7 @@
     if (!Number.isInteger(goalCents) || goalCents < 0 || !Number.isInteger(rateCents) || rateCents < 0) return;
     if (saving) return;
     saving = true;
+    let note = "";
     try {
       if (existingId) {
         requireChanged(await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
@@ -663,17 +690,23 @@
         const f = data.funds.find(f => f.id === existingId);
         if (f) Object.assign(f, { name, description: desc, goalCents, monthlyContributionRateCents: rateCents });
       } else {
-        const id = uid();
+        const id = formRowId();
         // created_by is forced to the caller by the row policy; it must be a bound (?) param.
-        await db("INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?,?,?,?,?,0,'everyone',?,?)",
+        const stored = await insertPinned("app_reserve_fund__funds", id, "INSERT INTO app_reserve_fund__funds (id, name, description, goal_cents, monthly_rate_cents, archived, visibility, created_by, created_at) VALUES (?,?,?,?,?,0,'everyone',?,?)",
           [id, name, desc, goalCents, rateCents, "", new Date().toISOString()]);
-        data.funds.push({ id, name, description: desc, goalCents, monthlyContributionRateCents: rateCents, archived: false, createdAt: today() });
+        // Landed on an earlier try: the fund as stored, and edits since are said.
+        if (stored && storedDiffers(stored, { name, description: desc, goal_cents: goalCents, monthly_rate_cents: rateCents })) note = SAVED_AS_FIRST;
+        data.funds = data.funds.filter(f => f.id !== id);
+        data.funds.push(stored
+          ? { id, name: stored.name, description: stored.description ?? "", goalCents: stored.goal_cents ?? 0, monthlyContributionRateCents: stored.monthly_rate_cents ?? 0, archived: !!stored.archived, createdAt: stored.created_at }
+          : { id, name, description: desc, goalCents, monthlyContributionRateCents: rateCents, archived: false, createdAt: today() });
         selectedFundId = id;
       }
-      closeModal();
+      if (modalEl === dialog) closeModal();
       render();
     } catch (e) { hubAlert(failText(e, { action: "save the fund", thing: "fund" })); return; }
     finally { saving = false; }
+    if (note) hubAlert(note);
     try {
       await publishFundsList();
     } catch (error) {
@@ -730,33 +763,44 @@
   };
 
   window.addTx = async function() {
+    const dialog = modalEl; // close only this dialog, not one opened since
     const desc   = document.getElementById("tx-desc").value.trim();
     const amountCents = toCents(document.getElementById("tx-amount").value);
     const type   = document.getElementById("tx-type").value;
     const date   = document.getElementById("tx-date").value;
     if (!desc || !Number.isInteger(amountCents) || amountCents <= 0 || !date) return;
-    const id = uid();
+    const id = formRowId();
     const signedCents = type === "withdrawal" ? -amountCents : amountCents;
     const fundId = selectedFundId;
     if (saving) return;
     saving = true;
+    let tx;
+    let note = "";
     try {
-      await db("INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+      const stored = await insertPinned("app_reserve_fund__manual_tx", id, "INSERT INTO app_reserve_fund__manual_tx (id, fund_id, amount_cents, description, date, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
         [id, fundId, signedCents, desc, date, "", new Date().toISOString()]);
-      data.manualTx.push({ id, fundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id });
-      // Keep the SQL-derived total in step with the optimistic row, or the
-      // balance would ignore the transaction until the next full load.
-      adjustFundTotal(fundId, signedCents);
-      closeModal();
+      // Landed on an earlier try: the transaction as stored, and edits since are said.
+      if (stored && storedDiffers(stored, { fund_id: fundId, amount_cents: signedCents, description: desc, date })) note = SAVED_AS_FIRST;
+      tx = stored
+        ? { id, fundId: stored.fund_id, amountCents: Number(stored.amount_cents) || 0, description: stored.description ?? "", date: stored.date, createdBy: stored.created_by }
+        : { id, fundId, amountCents: signedCents, description: desc, date, createdBy: ME?.id };
+      if (!data.manualTx.some(t => t.id === id)) {
+        data.manualTx.push(tx);
+        // Keep the SQL-derived total in step with the optimistic row, or the
+        // balance would ignore the transaction until the next full load.
+        adjustFundTotal(tx.fundId, tx.amountCents);
+      }
+      if (modalEl === dialog) closeModal();
       render();
     } catch (e) { hubAlert(failText(e, { action: "add the transaction", thing: "transaction" })); return; }
     finally { saving = false; }
+    if (note) hubAlert(note);
     // The row is stored: the form is already closed, the event follows.
     await publishEvent("reserve_fund.transaction_recorded", id, {
-      fund_id: fundId,
-      amount_cents: signedCents,
-      description: desc,
-      date,
+      fund_id: tx.fundId,
+      amount_cents: tx.amountCents,
+      description: tx.description,
+      date: tx.date,
     });
   };
 
@@ -795,28 +839,37 @@
   };
 
   window.addProject = async function() {
+    const dialog = modalEl; // close only this dialog, not one opened since
     const name = document.getElementById("proj-name").value.trim();
     const costCents = toCents(document.getElementById("proj-cost").value);
     const year = parseInt(document.getElementById("proj-year").value);
     if (!name || !Number.isInteger(costCents) || costCents < 0 || !Number.isInteger(year)) return;
-    const id = uid();
+    const id = formRowId();
     const fundId = selectedFundId;
     if (saving) return;
     saving = true;
+    let proj;
+    let note = "";
     try {
-      await db("INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
+      const stored = await insertPinned("app_reserve_fund__projects", id, "INSERT INTO app_reserve_fund__projects (id, fund_id, name, estimated_cost_cents, planned_year, visibility, created_by, created_at) VALUES (?,?,?,?,?,'everyone',?,?)",
         [id, fundId, name, costCents, year, "", new Date().toISOString()]);
-      data.projects.push({ id, fundId, name, estimatedCostCents: costCents, plannedYear: year });
-      closeModal();
+      // Landed on an earlier try: the project as stored, and edits since are said.
+      if (stored && storedDiffers(stored, { fund_id: fundId, name, estimated_cost_cents: costCents, planned_year: year })) note = SAVED_AS_FIRST;
+      proj = stored
+        ? { id, fundId: stored.fund_id, name: stored.name, estimatedCostCents: stored.estimated_cost_cents ?? 0, plannedYear: stored.planned_year ?? 0 }
+        : { id, fundId, name, estimatedCostCents: costCents, plannedYear: year };
+      data.projects = [...data.projects.filter(p => p.id !== id), proj];
+      if (modalEl === dialog) closeModal();
       renderDetail();
     } catch (e) { hubAlert(failText(e, { action: "add the project", thing: "project" })); return; }
     finally { saving = false; }
+    if (note) hubAlert(note);
     // The row is stored: the form is already closed, the event follows.
     await publishEvent("reserve_fund.project_planned", id, {
-      fund_id: fundId,
-      name,
-      estimated_cost_cents: costCents,
-      planned_year: year,
+      fund_id: proj.fundId,
+      name: proj.name,
+      estimated_cost_cents: proj.estimatedCostCents,
+      planned_year: proj.plannedYear,
     });
   };
 
@@ -865,6 +918,7 @@
   };
 
   window.saveBoardConfig = async function() {
+    const dialog = modalEl; // close only this dialog, not one opened since
     const groupId = document.getElementById("bc-group").value;
     try {
       const res = await fetch(ADMIN_CONFIG, {
@@ -873,7 +927,7 @@
       });
       if (!res.ok) { let m = "Save failed"; try { m = (await res.json()).error ?? m; } catch {} throw Object.assign(new Error(m), { status: res.status }); }
       boardGroupId = groupId;
-      closeModal();
+      if (modalEl === dialog) closeModal();
       render();
     } catch (e) { hubAlert(failText(e, { action: "save the board group", thing: "board group" })); }
   };

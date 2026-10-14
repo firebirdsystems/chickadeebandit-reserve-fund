@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   canManageReserve,
+  outcomeUnknown,
+  storedDiffers,
   fundBalanceCents,
   fundedPct,
   sortTxByDate,
@@ -111,5 +113,26 @@ describe("failureLine", () => {
     for (const status of [undefined, 400, 403, 404, 409, 500, 507]) {
       expect(failureLine(err({ status }, "Table requires privileged group membership"), what)).not.toMatch(/privileged/);
     }
+  });
+});
+
+describe("outcomeUnknown", () => {
+  it("no answer, a 400 or a 5xx other than 507 may have been stored", () => {
+    for (const e of [new TypeError("Failed to fetch"), { status: 400 }, { status: 500 }, { status: 503 }]) {
+      expect(outcomeUnknown(e)).toBe(true);
+    }
+  });
+  it("a refusal the hub named is known", () => {
+    for (const status of [403, 404, 409, 507]) expect(outcomeUnknown({ status })).toBe(false);
+  });
+});
+
+describe("storedDiffers", () => {
+  const fields = { amount_cents: -2500, description: "Repair", date: "2026-03-01" };
+  it("same values compared as text, extra stored columns ignored", () => {
+    expect(storedDiffers({ id: "t1", amount_cents: "-2500", description: "Repair", date: "2026-03-01" }, fields)).toBe(false);
+  });
+  it("an edited field differs", () => {
+    expect(storedDiffers({ amount_cents: 2500, description: "Repair", date: "2026-03-01" }, fields)).toBe(true);
   });
 });
