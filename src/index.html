@@ -115,7 +115,7 @@
   import { hubAlert, esc, hubConfirm, hubToday as today, glyph } from "/hub-sdk.js";
   import {
     canManageReserve as _canManageReserve,
-    fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents,
+    fundBalanceCents, fundedPct, sortTxByDate, projectFundingGapCents, failureLine,
   } from "./logic.js";
 
   // Static markup cannot call the SDK, so these marks are drawn here.
@@ -175,28 +175,31 @@
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sql, params }),
     });
+    // The status and code ride on the error: the line shown depends on them.
     if (!res.ok) {
-      let msg = `DB error ${res.status}`;
-      try { msg = (await res.json()).error ?? msg; } catch {}
-      throw new Error(msg);
+      let msg = `DB error ${res.status}`, code;
+      try { const body = await res.json(); msg = body.error ?? msg; code = body.code; } catch {}
+      throw Object.assign(new Error(msg), { status: res.status, code });
     }
     const json = await res.json().catch(() => null);
-    if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || `DB error ${res.status}`);
+    if (!json || typeof json !== "object" || json.error) throw Object.assign(new Error(json?.error || `DB error ${res.status}`), { status: res.status, code: json?.code });
     return json;
   }
 
-  // A failed write shows one fixed line for the action. Only wording this app
-  // wrote for the reader (marked `forUser` where it is thrown) is shown as is;
-  // the hub's own error text goes to the console.
-  function failText(e, line) { if (!e?.forUser) console.error(e); return e?.forUser ? e.message : line; }
+  // A failed write shows the line for what happened (see failureLine in
+  // logic.js), named in this app's words: `what` is { action, thing }. Only
+  // wording this app wrote for the reader (marked `forUser` where it is thrown)
+  // is shown as is; the hub's own error text goes to the console.
+  function failText(e, what) { if (!e?.forUser) console.error(e); return e?.forUser ? e.message : failureLine(e, what); }
 
   // Funds, transactions and projects are board-only writes
   // (`write_privileged_only`): the hub refuses a write from anyone else with a
-  // 403, which the request helper throws. HTTP 200 with `changed: 0` means the
-  // statement matched no row — the row is already gone.
-  function requireChanged(res) {
+  // 403, which the request helper throws, and a board member's write is not
+  // narrowed. So HTTP 200 with `changed: 0` on these `WHERE id=?` statements
+  // means the statement matched no row: the row is gone.
+  function requireChanged(res, what) {
     if (DB && Number(res?.changed ?? 0) === 0) {
-      throw Object.assign(new Error("That was not saved. It may already be gone — reload to check."), { forUser: true });
+      throw Object.assign(new Error(failureLine({ status: 404 }, what)), { forUser: true });
     }
   }
 
@@ -656,7 +659,7 @@
     try {
       if (existingId) {
         requireChanged(await db("UPDATE app_reserve_fund__funds SET name=?, description=?, goal_cents=?, monthly_rate_cents=? WHERE id=?",
-          [name, desc, goalCents, rateCents, existingId]));
+          [name, desc, goalCents, rateCents, existingId]), { action: "save the fund", thing: "fund" });
         const f = data.funds.find(f => f.id === existingId);
         if (f) Object.assign(f, { name, description: desc, goalCents, monthlyContributionRateCents: rateCents });
       } else {
@@ -669,7 +672,7 @@
       }
       closeModal();
       render();
-    } catch (e) { hubAlert(failText(e, "Couldn’t save the fund — try again.")); return; }
+    } catch (e) { hubAlert(failText(e, { action: "save the fund", thing: "fund" })); return; }
     finally { saving = false; }
     try {
       await publishFundsList();
@@ -685,7 +688,7 @@
     const ok = await hubConfirm({ message: `Archive "${fund.name}"?`, description: "Hidden from the dashboard. Transaction history is preserved.", confirmLabel: "Archive", destructive: true });
     if (!ok) return;
     try {
-      requireChanged(await db("UPDATE app_reserve_fund__funds SET archived=1 WHERE id=?", [fund.id]));
+      requireChanged(await db("UPDATE app_reserve_fund__funds SET archived=1 WHERE id=?", [fund.id]), { action: "archive the fund", thing: "fund" });
       fund.archived = true;
       selectedFundId = data.funds.filter(f => !f.archived)[0]?.id ?? null;
       render();
@@ -695,7 +698,7 @@
         console.error(error);
         hubAlert("Fund archived, but the cross-app funds list needs retrying.");
       }
-    } catch (e) { hubAlert(failText(e, "Couldn’t archive the fund — try again.")); }
+    } catch (e) { hubAlert(failText(e, { action: "archive the fund", thing: "fund" })); }
   };
 
   // ── Transaction modals ────────────────────────────────────────────────────
@@ -746,7 +749,7 @@
       adjustFundTotal(fundId, signedCents);
       closeModal();
       render();
-    } catch (e) { hubAlert(failText(e, "Couldn’t add the transaction — try again.")); return; }
+    } catch (e) { hubAlert(failText(e, { action: "add the transaction", thing: "transaction" })); return; }
     finally { saving = false; }
     // The row is stored: the form is already closed, the event follows.
     await publishEvent("reserve_fund.transaction_recorded", id, {
@@ -761,12 +764,12 @@
     const ok = await hubConfirm({ message: "Delete this transaction?", confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     try {
-      requireChanged(await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]));
+      requireChanged(await db("DELETE FROM app_reserve_fund__manual_tx WHERE id=?", [txId]), { action: "delete the transaction", thing: "transaction" });
       const removed = data.manualTx.find(t => t.id === txId);
       data.manualTx = data.manualTx.filter(t => t.id !== txId);
       if (removed) adjustFundTotal(removed.fundId, -Number(removed.amountCents || 0));
       render();
-    } catch (e) { hubAlert(failText(e, "Couldn’t delete the transaction — try again.")); }
+    } catch (e) { hubAlert(failText(e, { action: "delete the transaction", thing: "transaction" })); }
   };
 
   // ── Project modals ────────────────────────────────────────────────────────
@@ -806,7 +809,7 @@
       data.projects.push({ id, fundId, name, estimatedCostCents: costCents, plannedYear: year });
       closeModal();
       renderDetail();
-    } catch (e) { hubAlert(failText(e, "Couldn’t add the project — try again.")); return; }
+    } catch (e) { hubAlert(failText(e, { action: "add the project", thing: "project" })); return; }
     finally { saving = false; }
     // The row is stored: the form is already closed, the event follows.
     await publishEvent("reserve_fund.project_planned", id, {
@@ -823,10 +826,10 @@
     const ok = await hubConfirm({ message: `Delete "${p.name}"?`, confirmLabel: "Delete", destructive: true });
     if (!ok) return;
     try {
-      requireChanged(await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]));
+      requireChanged(await db("DELETE FROM app_reserve_fund__projects WHERE id=?", [p.id]), { action: "delete the project", thing: "project" });
       data.projects = data.projects.filter(proj => proj.id !== p.id);
       renderProjects(data.funds.find(f => f.id === selectedFundId));
-    } catch (e) { hubAlert(failText(e, "Couldn’t delete the project — try again.")); }
+    } catch (e) { hubAlert(failText(e, { action: "delete the project", thing: "project" })); }
   };
 
   // ── Board group configuration (admin-only; writes board_group_id via the
@@ -868,11 +871,11 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: "board_group_id", value: groupId }),
       });
-      if (!res.ok) { let m = "Save failed"; try { m = (await res.json()).error ?? m; } catch {} throw new Error(m); }
+      if (!res.ok) { let m = "Save failed"; try { m = (await res.json()).error ?? m; } catch {} throw Object.assign(new Error(m), { status: res.status }); }
       boardGroupId = groupId;
       closeModal();
       render();
-    } catch (e) { hubAlert(failText(e, "Couldn’t save the board group — try again.")); }
+    } catch (e) { hubAlert(failText(e, { action: "save the board group", thing: "board group" })); }
   };
 
   function handleDeepLink() {
