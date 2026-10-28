@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS app_reserve_fund__settings (
 );
 
 CREATE TABLE IF NOT EXISTS app_reserve_fund__funds (
-  id           TEXT PRIMARY KEY,
+  id           TEXT NOT NULL PRIMARY KEY,
   name         TEXT NOT NULL,
   description  TEXT NOT NULL DEFAULT '',
   goal_cents   INTEGER NOT NULL DEFAULT 0 CHECK (goal_cents >= 0),
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS app_reserve_fund__funds (
 );
 
 CREATE TABLE IF NOT EXISTS app_reserve_fund__manual_tx (
-  id          TEXT PRIMARY KEY,
+  id          TEXT NOT NULL PRIMARY KEY,
   fund_id     TEXT NOT NULL,
   amount_cents INTEGER NOT NULL CHECK (amount_cents <> 0),
   description TEXT NOT NULL DEFAULT '',
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS app_reserve_fund__manual_tx (
 );
 
 CREATE TABLE IF NOT EXISTS app_reserve_fund__projects (
-  id             TEXT PRIMARY KEY,
+  id             TEXT NOT NULL PRIMARY KEY,
   fund_id        TEXT NOT NULL,
   name           TEXT NOT NULL,
   estimated_cost_cents INTEGER NOT NULL DEFAULT 0 CHECK (estimated_cost_cents >= 0),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS app_reserve_fund__projects (
 );
 
 CREATE TABLE IF NOT EXISTS app_reserve_fund__imported_tx (
-  id             TEXT PRIMARY KEY,
+  id             TEXT NOT NULL PRIMARY KEY,
   source_app_id  TEXT NOT NULL,
   source_ref_id  TEXT NOT NULL,
   operation      TEXT NOT NULL CHECK (operation IN ('payment', 'reversal')),
